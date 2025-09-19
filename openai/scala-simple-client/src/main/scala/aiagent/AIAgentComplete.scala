@@ -10,6 +10,9 @@ import org.http4s.client.*
 import org.http4s.headers.*
 import org.http4s.syntax.literals.*
 
+// Circe configuration for snake_case to camelCase mapping
+given Configuration = Configuration.default.withSnakeCaseMemberNames
+
 // Constants
 object Constants:
   val DefaultModel = "o4-mini"
@@ -17,33 +20,26 @@ object Constants:
 // OpenAI API Models
 case class ChatMessage(
   role: String,
-  content: String
+  content: String,
+  refusal: Option[String] = None,
+  annotations: Option[List[String]] = None
 ) derives Encoder.AsObject, Decoder
 
 case class ChatCompletionRequest(
   model: String,
   messages: List[ChatMessage],
-  maxTokens: Option[Int] = None,
-  temperature: Option[Double] = None,
-  stream: Boolean = false
 ) derives Encoder.AsObject, Decoder
-
-case class ResponsesRequest(
-  model: String,
-  input: String,
-) derives Encoder.AsObject, Decoder
-
 
 case class Choice(
   index: Int,
   message: ChatMessage,
-  finishReason: Option[String]
+  finish_reason: Option[String]
 ) derives Encoder.AsObject, Decoder
 
 case class Usage(
-  promptTokens: Int,
-  completionTokens: Int,
-  totalTokens: Int
+  prompt_tokens: Int,
+  completion_tokens: Int,
+  total_tokens: Int
 ) derives Encoder.AsObject, Decoder
 
 case class ChatCompletionResponse(
@@ -54,39 +50,45 @@ case class ChatCompletionResponse(
   choices: List[Choice],
   usage: Usage
 ) derives Encoder.AsObject, Decoder
+
+case class ResponsesRequest(
+  model: String,
+  input: String,
+) derives Encoder.AsObject, Decoder
+
 // Responses API Models
 case class ContentAnnotation(
   // Add fields as needed based on actual annotation structure
 ) derives Encoder.AsObject, Decoder
 
 case class OutputContent(
-  `type`: String,
-  text: String,
+  `type`: Option[String],
+  text: Option[String],
   annotations: List[ContentAnnotation]
 ) derives Encoder.AsObject, Decoder
 
 case class ResponseMessage(
-  `type`: String,
-  id: String,
-  status: String,
-  role: String,
-  content: List[OutputContent]
+  `type`: Option[String],
+  id: Option[String],
+  status: Option[String],
+  role: Option[String],
+  content: Option[List[OutputContent]]
 ) derives Encoder.AsObject, Decoder
 
 case class InputTokensDetails(
-  cachedTokens: Int
+  cached_tokens: Int
 ) derives Encoder.AsObject, Decoder
 
 case class OutputTokensDetails(
-  reasoningTokens: Int
+  reasoning_tokens: Int
 ) derives Encoder.AsObject, Decoder
 
 case class ResponseUsage(
-  inputTokens: Int,
-  inputTokensDetails: InputTokensDetails,
-  outputTokens: Int,
-  outputTokensDetails: OutputTokensDetails,
-  totalTokens: Int
+  input_tokens: Int,
+  input_tokens_details: InputTokensDetails,
+  output_tokens: Int,
+  output_tokens_details: OutputTokensDetails,
+  total_tokens: Int
 ) derives Encoder.AsObject, Decoder
 
 case class ResponseReasoning(
@@ -99,29 +101,36 @@ case class TextFormat(
 ) derives Encoder.AsObject, Decoder
 
 case class ResponseText(
-  format: TextFormat
+  format: TextFormat,
+  verbosity: String  // Add the missing verbosity field from JSON
 ) derives Encoder.AsObject, Decoder
 
 case class ResponsesResponse(
   id: String,
   `object`: String,
-  createdAt: Long,
+  created_at: Long,
   status: String,
+  background: Boolean,
   error: Option[String],
   incompleteDetails: Option[String],
   instructions: Option[String],
   maxOutputTokens: Option[Int],
+  maxToolCalls: Option[Int],
   model: String,
   output: List[ResponseMessage],
-  parallelToolCalls: Boolean,
+  parallel_tool_calls: Boolean,
   previousResponseId: Option[String],
+  promptCacheKey: Option[String],
   reasoning: ResponseReasoning,
+  safetyIdentifier: Option[String],
+  service_tier: String,
   store: Boolean,
   temperature: Double,
   text: ResponseText,
-  toolChoice: String,
+  tool_choice: String,
   tools: List[String],
-  topP: Double,
+  top_logprobs: Int,
+  top_p: Double,
   truncation: String,
   usage: ResponseUsage,
   user: Option[String],
@@ -147,9 +156,7 @@ class OpenAIClient[F[_]: Async](client: Client[F], apiKey: String):
       )
     ).withEntity(request)
 
-    client.expect[ChatCompletionResponse](req).flatTap { response =>
-      Async[F].delay(println(s"Full OpenAI API Response: $response"))
-    }
+    client.expect[ChatCompletionResponse](req)
 
   def sendMessage(message: String, model: String = Constants.DefaultModel): F[String] =
     val request = ResponsesRequest(model = model, input = message)
@@ -162,14 +169,13 @@ class OpenAIClient[F[_]: Async](client: Client[F], apiKey: String):
       )
     ).withEntity(request)
 
-    client.expect[ResponsesResponse](req).flatTap { response =>
-      Async[F].delay(println(s"Full OpenAI API Response: $response"))
-    }.map { response =>
-      // Extract text content from the response structure
-      response.output.headOption
-        .flatMap(_.content.headOption)
-        .map(_.text)
-        .getOrElse("No response")
+    client.expect[ResponsesResponse](req).map { response =>
+      response.output
+        .find(_.content.isDefined)  // Find the output that has content
+        .flatMap(_.content)
+        .flatMap(_.headOption)
+        .flatMap(_.text)
+        .getOrElse("No content")
     }
 
 object OpenAIClient:
@@ -196,8 +202,6 @@ class AIAgent[F[_]: Async](
     val request = ChatCompletionRequest(
       model = config.defaultModel,
       messages = messages,
-      maxTokens = Some(config.maxTokens),
-      temperature = Some(config.temperature)
     )
 
     openAIClient.chatCompletion(request).map(_.choices.headOption.map(_.message.content).getOrElse("No response"))
