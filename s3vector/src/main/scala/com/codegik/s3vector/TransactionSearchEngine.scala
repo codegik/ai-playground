@@ -9,7 +9,7 @@ class TransactionSearchEngine(
     openSearchService.createIndex()
   }
 
-  def indexTransaction(transaction: Transaction): Either[String, String] = {
+  private def indexTransaction(transaction: Transaction): Either[String, String] = {
     embeddingService.generateEmbedding(transaction.toSearchableText).flatMap { embedding =>
       openSearchService.indexTransaction(transaction, embedding)
     }
@@ -47,6 +47,7 @@ class TransactionSearchEngine(
   }
 
   def close(): Unit = {
+    embeddingService.close()
     openSearchService.close()
   }
 }

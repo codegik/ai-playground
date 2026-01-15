@@ -4,7 +4,7 @@ import java.time.LocalDateTime
 
 object Main {
   def main(args: Array[String]): Unit = {
-    val openSearchEndpoint = sys.env.getOrElse("OPENSEARCH_ENDPOINT", "https://your-collection.us-east-1.aoss.amazonaws.com")
+    val openSearchEndpoint = sys.env.getOrElse("OPENSEARCH_ENDPOINT", "http://localhost:9200")
     val searchEngine = TransactionSearchEngine(openSearchEndpoint)
 
     println("Creating OpenSearch index...")

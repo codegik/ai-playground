@@ -32,7 +32,7 @@ class OpenSearchService(endpoint: String) {
           "categories" -> Json.obj("type" -> Json.fromString("keyword")),
           "embedding" -> Json.obj(
             "type" -> Json.fromString("knn_vector"),
-            "dimension" -> Json.fromInt(1536)
+            "dimension" -> Json.fromInt(768)
           )
         )
       )
