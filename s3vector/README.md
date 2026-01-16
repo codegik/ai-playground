@@ -69,15 +69,39 @@ case class Transaction(
 )
 ```
 
-## Cost Notes
-
-- OpenSearch Serverless: ~$700/month minimum (OCU-based pricing)
-- Bedrock Titan Embeddings: $0.0001 per 1k tokens
-- For POC, delete collection after testing to avoid charges
-
-## Cleanup
+## Stopping Services
 
 ```bash
-aws opensearchserverless delete-collection --id <collection-id>
-aws opensearchserverless delete-access-policy --name transactions-access --type data
+./stop.sh
+```
+
+## Troubleshooting
+
+### Certificate Errors (Ollama)
+
+If you get certificate errors when pulling models:
+
+```bash
+podman machine ssh
+sudo timedatectl set-ntp true
+exit
+podman restart ollama
+podman exec ollama ollama pull nomic-embed-text
+```
+
+### OpenSearch Logs
+
+```bash
+podman logs opensearch
+```
+
+## Project Structure
+
+```
+src/main/scala/com/codegik/s3vector/
+├── Main.scala                    - Entry point
+├── Transaction.scala             - Data model
+├── EmbeddingService.scala        - Ollama client
+├── OpenSearchService.scala       - Vector DB client
+└── TransactionSearchEngine.scala - Search orchestration
 ```
