@@ -1,5 +1,8 @@
 package com.codegik.s3vector
 
+import com.codegik.s3vector.domain.Transaction
+import com.codegik.s3vector.search.TransactionSearchEngine
+
 import java.time.LocalDateTime
 
 object Main {

@@ -1,4 +1,4 @@
-package com.codegik.s3vector
+package com.codegik.s3vector.domain
 
 import java.time.LocalDateTime
 

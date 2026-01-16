@@ -1,4 +1,8 @@
-package com.codegik.s3vector
+package com.codegik.s3vector.search
+
+import com.codegik.s3vector.service.{EmbeddingService, OpenSearchService}
+import com.codegik.s3vector.search.TransactionSearchEngine
+import com.codegik.s3vector.domain.Transaction
 
 class TransactionSearchEngine(
   private val embeddingService: EmbeddingService,

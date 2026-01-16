@@ -1,12 +1,13 @@
-package com.codegik.s3vector
+package com.codegik.s3vector.service
 
+import io.circe.generic.auto.*
 import io.circe.parser.*
 import io.circe.syntax.*
-import io.circe.generic.auto.*
 import org.apache.hc.client5.http.classic.methods.HttpPost
 import org.apache.hc.client5.http.impl.classic.{CloseableHttpClient, HttpClients}
 import org.apache.hc.core5.http.ContentType
 import org.apache.hc.core5.http.io.entity.StringEntity
+
 import scala.io.Source
 import scala.util.{Try, Using}
 

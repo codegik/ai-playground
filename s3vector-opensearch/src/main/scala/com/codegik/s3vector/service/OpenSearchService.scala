@@ -1,6 +1,7 @@
-package com.codegik.s3vector
+package com.codegik.s3vector.service
 
 import cats.implicits.*
+import com.codegik.s3vector.domain.Transaction
 import io.circe.*
 import io.circe.parser.*
 import org.apache.hc.client5.http.classic.methods.{HttpGet, HttpPost, HttpPut}
