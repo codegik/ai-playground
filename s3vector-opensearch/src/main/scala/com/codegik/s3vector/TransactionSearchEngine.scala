@@ -37,7 +37,7 @@ class TransactionSearchEngine(
       case Right(results) =>
         println(s"Found ${results.size} results:")
         results.zipWithIndex.foreach { case (transaction, idx) =>
-          println(s"  ${idx + 1}. ${transaction.merchantName} - $${transaction.amount}")
+          println(s"  ${idx + 1}. ${transaction.merchantName} - ${transaction.amount}")
           println(s"     ${transaction.description}")
           println(s"     Categories: ${transaction.categories.mkString(", ")}")
         }

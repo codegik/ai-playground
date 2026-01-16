@@ -7,13 +7,13 @@ Credit card transaction search using local OpenSearch and Ollama embeddings.
 - **Data**: Credit card transactions with categorization
 - **Embeddings**: Ollama nomic-embed-text (768 dimensions)
 - **Vector DB**: OpenSearch with k-NN search
-- **Language**: Scala 3.3.4
+- **Language**: Scala 3.7.3
 
 ## Prerequisites
 
-- Podman (or Docker)
+- Docker
 - SBT (Scala Build Tool)
-- Java 11+
+- Java 25
 
 ## Local Setup
 
@@ -38,7 +38,6 @@ curl http://localhost:11434/api/tags
 ### 3. Compile and Run
 
 ```bash
-sbt compile
 sbt run
 ```
 
@@ -73,26 +72,6 @@ case class Transaction(
 
 ```bash
 ./stop.sh
-```
-
-## Troubleshooting
-
-### Certificate Errors (Ollama)
-
-If you get certificate errors when pulling models:
-
-```bash
-podman machine ssh
-sudo timedatectl set-ntp true
-exit
-podman restart ollama
-podman exec ollama ollama pull nomic-embed-text
-```
-
-### OpenSearch Logs
-
-```bash
-podman logs opensearch
 ```
 
 ## Project Structure

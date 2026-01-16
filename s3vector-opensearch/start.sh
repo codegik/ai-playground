@@ -3,7 +3,7 @@
 set -e
 
 echo "Starting OpenSearch..."
-podman run -d --name opensearch \
+docker run -d --name opensearch \
   -p 9200:9200 -p 9600:9600 \
   -e "discovery.type=single-node" \
   -e "DISABLE_SECURITY_PLUGIN=true" \
@@ -11,7 +11,7 @@ podman run -d --name opensearch \
   opensearchproject/opensearch:latest
 
 echo "Starting Ollama..."
-podman run -d --name ollama \
+docker run -d --name ollama \
   -p 11434:11434 \
   -v ollama-data:/root/.ollama \
   ollama/ollama:latest
@@ -29,7 +29,7 @@ while ! curl -s http://localhost:11434/api/tags >/dev/null; do
 done
 
 echo "Pulling nomic-embed-text model..."
-podman exec ollama ollama pull nomic-embed-text
+docker exec ollama ollama pull nomic-embed-text
 
 echo "Waiting for OpenSearch to be ready..."
 attempt=0
