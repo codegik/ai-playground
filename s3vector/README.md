@@ -1,88 +1,57 @@
 # S3 Vector Search POC
 
-Credit card transaction search using AWS OpenSearch Serverless with vector engine.
+Credit card transaction search using local OpenSearch and Ollama embeddings.
 
 ## Architecture
 
 - **Data**: Credit card transactions with categorization
-- **Embeddings**: AWS Bedrock Titan Embed Text v1
-- **Vector DB**: AWS OpenSearch Serverless with k-NN search
+- **Embeddings**: Ollama nomic-embed-text (768 dimensions)
+- **Vector DB**: OpenSearch with k-NN search
 - **Language**: Scala 3.3.4
 
 ## Prerequisites
 
-1. AWS Account with:
-   - AWS Bedrock access (Titan Embed Text v1 model enabled)
-   - OpenSearch Serverless permissions
+- Podman (or Docker)
+- SBT (Scala Build Tool)
+- Java 11+
 
-2. AWS CLI configured with credentials:
-```bash
-aws configure
-```
+## Local Setup
 
-## AWS OpenSearch Serverless Setup
-
-### 1. Create Collection
+### 1. Start Services
 
 ```bash
-aws opensearchserverless create-collection \
-  --name transactions \
-  --type VECTORSEARCH
+./start.sh
 ```
 
-### 2. Create Data Access Policy
+This starts:
+- OpenSearch on port 9200
+- Ollama on port 11434
+- Pulls nomic-embed-text model
 
-Save as `data-access-policy.json`:
-```json
-[{
-  "Rules": [{
-    "ResourceType": "index",
-    "Resource": ["index/transactions/*"],
-    "Permission": ["aoss:*"]
-  }],
-  "Principal": ["arn:aws:iam::<YOUR_ACCOUNT_ID>:user/<YOUR_USER>"]
-}]
-```
-
-Apply policy:
-```bash
-aws opensearchserverless create-access-policy \
-  --name transactions-access \
-  --type data \
-  --policy file://data-access-policy.json
-```
-
-### 3. Get Collection Endpoint
+### 2. Verify Services
 
 ```bash
-aws opensearchserverless batch-get-collection --names transactions
+curl http://localhost:9200/_cluster/health
+curl http://localhost:11434/api/tags
 ```
 
-Note the `collectionEndpoint` from output.
-
-## Run POC
-
-### 1. Set environment variable
+### 3. Compile and Run
 
 ```bash
-export OPENSEARCH_ENDPOINT=https://xxxxx.us-east-1.aoss.amazonaws.com
-```
-
-### 2. Compile and run
-
-```bash
+sbt compile
 sbt run
 ```
 
 ## What It Does
 
-1. Creates OpenSearch index with vector field (1536 dimensions)
-2. Indexes 4 transactions:
+1. Creates OpenSearch index with vector field (768 dimensions)
+2. Generates embeddings for each transaction using Ollama
+3. Indexes 4 transactions:
    - Starbucks coffee purchase
    - Gas station fuel
    - Amazon electronics
    - McDonald's fast food
-3. Searches using vector similarity:
+4. Searches using vector similarity:
    - "morning coffee" → finds Starbucks
    - "electronics shopping" → finds Amazon
    - "gas station fuel" → finds Shell
