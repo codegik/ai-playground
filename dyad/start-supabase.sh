@@ -4,4 +4,4 @@ set -e
 
 supabase start
 supabase status
-supabase functions serve --no-verify-jwt --env-file .env.local
+supabase functions serve --no-verify-jwt
