@@ -30,4 +30,8 @@ Make sure there will be only one `depends = gtk3` in the file. Then run:
 sudo pacman -U dyad-0.34.0-1-x86_64.pkg.tar.zst
 ```
 
+## Run it
 
+```
+dyad
+```
