@@ -11,3 +11,6 @@ I'm using Omarchy linux based on Arch distro. Here is how to run it.
 ``` 
 yay -S debtap
 
+``` 
+
+
