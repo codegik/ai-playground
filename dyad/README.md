@@ -20,6 +20,6 @@ curl -O https://github.com/dyad-sh/dyad/releases/download/v0.34.0/dyad_0.34.0_am
 debtap dyad_0.34.0_amd64.deb
 sudo pacman -U dyad-0.34.0-1-x86_64.pkg.tar.zst
 ```
-
+During the installation, you will be asked to edit the 
 
 
