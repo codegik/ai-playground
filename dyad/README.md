@@ -24,6 +24,10 @@ During the installation, you will be asked to edit the PKGBUILD file.
 
 Then will find depencency `depends = gtk`, you must change to `depends = gtk3`.
 
-Just make there will be only one `depends = gtk3` in the file.
+Make sure there will be only one `depends = gtk3` in the file. Then run:
+
+```
+sudo pacman -U dyad-0.34.0-1-x86_64.pkg.tar.zst
+```
 
 
