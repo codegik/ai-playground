@@ -18,6 +18,7 @@ sudo debtap -u
 ```
 curl -O https://github.com/dyad-sh/dyad/releases/download/v0.34.0/dyad_0.34.0_amd64.deb
 debtap dyad_0.34.0_amd64.deb
+sudo pacman -U dyad-0.34.0-1-x86_64.pkg.tar.zst
 ```
 
 
