@@ -61,13 +61,19 @@ class WhisperTranscriber(modelPath: String = "models/vosk-model-small-en-us-0.15
           TranscriptionResult("", Some("en"), 0.0f)
         else
           // Feed audio data to recognizer
-          rec.acceptWaveForm(audioData, audioData.length)
+          val accepted = rec.acceptWaveForm(audioData, audioData.length)
 
-          // Get partial result (this is very fast!)
-          val resultJson = rec.getPartialResult()
+          // Get final result (completed text) instead of partial to avoid accumulation
+          val resultJson = rec.getFinalResult()
 
           // Parse JSON result
-          parseVoskResult(resultJson)
+          val result = parseVoskResult(resultJson)
+          
+          // Reset recognizer for next chunk to prevent accumulation
+          if result.text.nonEmpty then
+            rec.reset()
+          
+          result
 
       case None =>
         throw IllegalStateException("Vosk model not initialized. Call initialize() first.")
