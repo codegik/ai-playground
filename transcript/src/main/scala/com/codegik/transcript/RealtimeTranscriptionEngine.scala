@@ -14,10 +14,10 @@ import java.io.ByteArrayOutputStream
  */
 class RealtimeTranscriptionEngine(
   modelPath: String,
-  chunkDurationMs: Int = 1000, // Process audio in 1-second chunks for better real-time performance
+  chunkDurationMs: Int = 2000, // Process audio in 2-second chunks
   silenceThreshold: Float = 0.01f
 )(using ExecutionContext):
-  
+
   private val microphone = MicrophoneCapture()
   private val transcriber = WhisperTranscriber(modelPath)
   private var isRunning = false
