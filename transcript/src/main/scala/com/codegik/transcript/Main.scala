@@ -89,6 +89,10 @@ object Main:
           case Some(modelPath) => ("vosk", modelPath)
           case None => ("whisper", "base")
 
+      case engine :: model :: _ if engine == "vosk" || engine == "whisper" =>
+        // Both engine and model specified (e.g., "whisper medium")
+        (engine, model)
+
       case engine :: Nil if engine == "vosk" || engine == "whisper" =>
         // Engine specified, auto-detect model
         engine match
@@ -102,10 +106,6 @@ object Main:
           case "whisper" => ("whisper", "base")
           case _ => ("whisper", "base")
 
-      case engine :: model :: _ =>
-        // Both engine and model specified
-        val validEngine = if engine == "vosk" || engine == "whisper" then engine else "whisper"
-        (validEngine, model)
 
       case other =>
         // First arg is probably a model path/name - auto-detect engine
