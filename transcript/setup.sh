@@ -29,57 +29,42 @@ else
     echo "✓ SBT detected"
 fi
 
-# Create models directory
-echo ""
-echo "Creating models directory..."
-mkdir -p models
-echo "✓ Models directory created"
-
-# Download model
-echo ""
-echo "Available Whisper models:"
-echo "  1. tiny   (~75 MB)  - Fastest, less accurate"
-echo "  2. base   (~142 MB) - Good balance (RECOMMENDED)"
-echo "  3. small  (~466 MB) - Better accuracy"
-echo "  4. medium (~1.5 GB) - High accuracy"
-echo "  5. large  (~2.9 GB) - Best accuracy"
-echo ""
-echo -n "Which model do you want to download? [1-5] (default: 2): "
-read choice
-
-case $choice in
-    1)
-        MODEL="ggml-tiny.bin"
-        ;;
-    3)
-        MODEL="ggml-small.bin"
-        ;;
-    4)
-        MODEL="ggml-medium.bin"
-        ;;
-    5)
-        MODEL="ggml-large-v3.bin"
-        ;;
-    *)
-        MODEL="ggml-base.bin"
-        ;;
-esac
-
-MODEL_PATH="models/$MODEL"
-
-if [ -f "$MODEL_PATH" ]; then
-    echo "✓ Model already exists: $MODEL_PATH"
+# Check for Python 3
+echo "Checking Python 3..."
+if ! command -v python3 &> /dev/null; then
+    echo "❌ Error: Python 3 not found"
+    echo "Please install Python 3: https://www.python.org/downloads/"
+    exit 1
 else
-    echo ""
-    echo "Downloading $MODEL..."
-    wget "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$MODEL" -O "$MODEL_PATH"
+    PYTHON_VERSION=$(python3 --version)
+    echo "✓ $PYTHON_VERSION detected"
+fi
 
-    if [ $? -eq 0 ]; then
-        echo "✓ Model downloaded successfully"
-    else
-        echo "❌ Failed to download model"
-        echo "You can manually download from: https://huggingface.co/ggerganov/whisper.cpp/tree/main"
-        exit 1
+# Check/Install Whisper
+echo ""
+echo "Checking for Whisper installation..."
+if python3 -c "import whisper" 2>/dev/null; then
+    echo "✓ Whisper is already installed"
+else
+    echo "Whisper not found. Installing..."
+    echo ""
+    echo "Choose installation method:"
+    echo "  1. pip3 install (recommended)"
+    echo "  2. Skip (install manually later)"
+    echo ""
+    echo -n "Choice [1-2] (default: 1): "
+    read choice
+
+    if [ "$choice" != "2" ]; then
+        pip3 install openai-whisper
+
+        if [ $? -eq 0 ]; then
+            echo "✓ Whisper installed successfully"
+        else
+            echo "❌ Failed to install Whisper"
+            echo "Try manually: pip3 install openai-whisper"
+            exit 1
+        fi
     fi
 fi
 
@@ -94,11 +79,19 @@ if [ $? -eq 0 ]; then
     echo "✓ Setup completed successfully!"
     echo "=================================================="
     echo ""
-    echo "To run the application:"
-    echo "  sbt \"run $MODEL_PATH\""
+    echo "Available models:"
+    echo "  - tiny   (~75 MB)  - Fastest"
+    echo "  - base   (~142 MB) - Recommended"
+    echo "  - small  (~466 MB) - Better accuracy"
+    echo "  - medium (~1.5 GB) - High accuracy"
+    echo "  - large  (~2.9 GB) - Best accuracy"
     echo ""
-    echo "Or simply:"
-    echo "  sbt run"
+    echo "Models download automatically on first use."
+    echo ""
+    echo "To run the application:"
+    echo "  sbt run                  # Uses 'base' model"
+    echo "  sbt \"run tiny\"         # Uses 'tiny' model (fastest)"
+    echo "  sbt \"run small\"        # Uses 'small' model (better accuracy)"
     echo ""
 else
     echo "❌ Compilation failed"

@@ -1,6 +1,6 @@
 package com.codegik.transcript.transcription
 
-import scala.util.{Try, Success}
+import scala.util.Try
 import scala.sys.process.*
 import java.nio.file.Files
 import java.io.File

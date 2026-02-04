@@ -1,19 +1,20 @@
 #!/bin/bash
 
-# Quick start script - downloads model and runs the application
+# Quick start script - checks for Whisper installation and runs the application
 
-MODEL_PATH="models/ggml-base.bin"
+echo "Checking for Whisper installation..."
 
-if [ ! -f "$MODEL_PATH" ]; then
-    echo "Model not found. Downloading..."
-    mkdir -p models
-    wget "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin" -O "$MODEL_PATH"
+if ! python3 -c "import whisper" 2>/dev/null; then
+    echo "Whisper not installed. Installing..."
+    pip3 install openai-whisper
 
     if [ $? -ne 0 ]; then
-        echo "Failed to download model"
+        echo "Failed to install Whisper"
+        echo "Please install manually: pip3 install openai-whisper"
         exit 1
     fi
+    echo "✓ Whisper installed"
 fi
 
 echo "Starting real-time transcription..."
-sbt "run $MODEL_PATH"
+sbt run

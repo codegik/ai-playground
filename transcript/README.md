@@ -19,38 +19,33 @@ A Scala-based real-time audio transcription system that runs **100% locally** wi
 
 ## Quick Start
 
-### 1. Download a Whisper Model
+### 1. Install Whisper
 
-First, create a models directory and download a model:
+First, install OpenAI's Whisper via Python:
 
 ```bash
-mkdir -p models
-cd models
+# Option 1: Using pip
+pip install openai-whisper
 
-# Download the base model (recommended for most use cases - ~142 MB)
-wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin
+# Option 2: Using conda
+conda install -c conda-forge openai-whisper
 
-# Or choose a different model:
-# Tiny model (fastest, ~75 MB):
-# wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-tiny.bin
-
-# Small model (better accuracy, ~466 MB):
-# wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin
-
-# Medium model (high accuracy, ~1.5 GB):
-# wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-medium.bin
-
-cd ..
+# Option 3: Using pip3 explicitly
+pip3 install openai-whisper
 ```
+
+**Note**: Models are downloaded automatically on first use.
 
 ### 2. Run the Application
 
 ```bash
-# Using default model path (models/ggml-base.bin)
+# Using default model (base - recommended)
 sbt run
 
-# Or specify a custom model path
-sbt "run models/ggml-tiny.bin"
+# Or specify a different model
+sbt "run tiny"    # Fastest for testing
+sbt "run small"   # Better accuracy
+sbt "run medium"  # High accuracy (slower)
 ```
 
 ### 3. Start Speaking
@@ -61,10 +56,11 @@ Once the application starts, speak into your microphone. You'll see transcriptio
 ============================================================
 Real-Time Audio Transcription System
 ============================================================
-Loading Whisper model from: models/ggml-base.bin
-✓ Whisper model loaded successfully
-✓ Microphone opened: 16000.0Hz, 16-bit, 1 channel(s)
+Checking for Whisper installation...
+✓ Whisper (model: base) is available
+Note: Model will be downloaded automatically on first use
 ✓ Engine initialized successfully
+✓ Microphone opened: 16000.0Hz, 16-bit, 1 channel(s)
 ✓ Microphone capture started
 ✓ Real-time transcription started (processing 3000ms chunks)
 Speak into your microphone...
@@ -78,6 +74,8 @@ Press Ctrl+C to stop transcription
 
 ## Model Selection Guide
 
+Models are downloaded automatically on first use from OpenAI's servers.
+
 | Model | Size | Speed | Accuracy | Recommendation |
 |-------|------|-------|----------|----------------|
 | **tiny** | 75 MB | ⚡⚡⚡⚡ | ⭐⭐ | Quick testing |
@@ -86,7 +84,9 @@ Press Ctrl+C to stop transcription
 | **medium** | 1.5 GB | ⚡ | ⭐⭐⭐⭐⭐ | Professional use |
 | **large** | 2.9 GB | 🐌 | ⭐⭐⭐⭐⭐ | Best possible quality |
 
-**Recommendation**: Start with `ggml-base.bin` - it provides excellent accuracy with reasonable speed for real-time use.
+**Recommendation**: Start with `base` - it provides excellent accuracy with reasonable speed for real-time use.
+
+Models are cached in: `~/.cache/whisper/` (Linux/macOS) or `%USERPROFILE%\.cache\whisper\` (Windows)
 
 ## Architecture
 
@@ -117,9 +117,9 @@ You can customize the transcription behavior in `RealtimeTranscriptionEngine`:
 
 ```scala
 val engine = RealtimeTranscriptionEngine(
-  modelPath = "models/ggml-base.bin",
-  chunkDurationMs = 3000,        // Process audio every 3 seconds
-  silenceThreshold = 0.01f       // Silence detection threshold
+  modelName = "base",                // Change model: tiny, base, small, medium, large
+  chunkDurationMs = 3000,            // Process audio every 3 seconds
+  silenceThreshold = 0.01f           // Silence detection threshold
 )
 ```
 
@@ -143,21 +143,30 @@ No configuration needed - language detection is automatic!
 
 ## Troubleshooting
 
+### "Whisper not installed"
+**Solution**: Install Python Whisper
+```bash
+pip install openai-whisper
+# or
+pip3 install openai-whisper
+```
+
 ### "Microphone not supported"
 - Check that your microphone is connected and working
 - Try listing available audio devices: `arecord -l` (Linux) or check System Preferences (macOS)
 
-### "Model file not found"
-- Ensure you've downloaded the model to the correct path
-- Verify the file exists: `ls -lh models/`
+### Model download fails
+- Ensure you have internet connection (first use only)
+- Check disk space (models are cached in ~/.cache/whisper/)
+- Try manually downloading: The model will auto-download on first transcription
 
 ### Slow transcription
-- Try a smaller model (tiny or base)
+- Try a smaller model: `sbt "run tiny"`
 - Increase `chunkDurationMs` for less frequent processing
 - Close other resource-intensive applications
 
 ### Poor accuracy
-- Use a larger model (small, medium, or large)
+- Use a larger model: `sbt "run small"` or `sbt "run medium"`
 - Ensure good microphone quality and minimal background noise
 - Increase chunk duration for more context
 
@@ -166,15 +175,15 @@ No configuration needed - language detection is automatic!
 - **Language**: Scala 3.5.2
 - **JDK**: Java 25
 - **Build Tool**: SBT
-- **AI Model**: OpenAI Whisper (via whisper.cpp and WhisperJNI)
+- **AI Model**: OpenAI Whisper (via Python)
 - **Audio**: Java Sound API
 
 ## License
 
 This project uses:
 - **Whisper** (MIT License) - OpenAI
-- **whisper.cpp** (MIT License) - Georgi Gerganov
-- **WhisperJNI** (MIT License) - givimad
+- **Scala** (Apache 2.0 License)
+- **Java** (GPL v2 with Classpath Exception)
 
 ## Contributing
 
