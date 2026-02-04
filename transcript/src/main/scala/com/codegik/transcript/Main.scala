@@ -17,16 +17,12 @@ object Main:
     println("Real-Time Audio Transcription System")
     println("=" * 60)
 
-    // Model path (user should download the model first)
-    val modelPath = args.headOption.getOrElse("models/ggml-base.bin")
-
-    if !Files.exists(Paths.get(modelPath)) then
-      printModelInstructions()
-      System.exit(1)
+    // Model name (tiny, base, small, medium, large)
+    val modelName = args.headOption.getOrElse("base")
 
     // Create the transcription engine
     val engine = RealtimeTranscriptionEngine(
-      modelPath = modelPath,
+      modelName = modelName,
       chunkDurationMs = 3000 // Process audio in 3-second chunks
     )
 
@@ -74,30 +70,32 @@ object Main:
     println(f"$timestamp $langInfo%10s | ${result.text}")
 
   /**
-   * Print instructions for downloading Whisper models
+   * Print instructions for installing Whisper
    */
   private def printModelInstructions(): Unit =
     println()
-    println("ERROR: Model file not found!")
+    println("ERROR: Whisper not installed!")
     println()
-    println("You need to download a Whisper model first.")
+    println("This system uses OpenAI's Whisper via Python.")
     println()
-    println("Available models (from fastest/smallest to slowest/largest):")
-    println("  - ggml-tiny.bin     (~75 MB)  - Fastest, less accurate")
-    println("  - ggml-base.bin     (~142 MB) - Good balance (RECOMMENDED)")
-    println("  - ggml-small.bin    (~466 MB) - Better accuracy")
-    println("  - ggml-medium.bin   (~1.5 GB) - High accuracy")
-    println("  - ggml-large.bin    (~2.9 GB) - Best accuracy, slowest")
+    println("Installation instructions:")
+    println("  1. Install Python 3 (if not already installed)")
     println()
-    println("Download instructions:")
-    println("  1. Create a 'models' directory in the project root:")
-    println("     mkdir -p models")
+    println("  2. Install Whisper:")
+    println("     pip install openai-whisper")
     println()
-    println("  2. Download a model (example for base model):")
-    println("     wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin -O models/ggml-base.bin")
+    println("  Or with conda:")
+    println("     conda install -c conda-forge openai-whisper")
     println()
-    println("  Or download from: https://huggingface.co/ggerganov/whisper.cpp/tree/main")
+    println("Available models (downloaded automatically on first use):")
+    println("  - tiny   (~75 MB)  - Fastest, less accurate")
+    println("  - base   (~142 MB) - Good balance (RECOMMENDED)")
+    println("  - small  (~466 MB) - Better accuracy")
+    println("  - medium (~1.5 GB) - High accuracy")
+    println("  - large  (~2.9 GB) - Best accuracy, slowest")
     println()
-    println("  3. Run the application with the model path:")
-    println("     sbt \"run models/ggml-base.bin\"")
+    println("After installation, run:")
+    println("  sbt run                  # Uses 'base' model")
+    println("  sbt \"run tiny\"         # Uses 'tiny' model for faster processing")
+    println("  sbt \"run small\"        # Uses 'small' model for better accuracy")
     println()
