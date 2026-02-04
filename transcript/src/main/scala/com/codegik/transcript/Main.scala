@@ -23,7 +23,7 @@ object Main:
     // Create the transcription engine
     val engine = RealtimeTranscriptionEngine(
       modelName = modelName,
-      chunkDurationMs = 300 // Process audio in 3-second chunks
+      chunkDurationMs = 1000 // Process audio in 3-second chunks
     )
 
     // Initialize the engine
