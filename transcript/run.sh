@@ -1,20 +1,10 @@
 #!/bin/bash
 
-# Quick start script - checks for Whisper installation and runs the application
+# Quick start script for Vosk real-time transcription
 
-echo "Checking for Whisper installation..."
+# Set library path for native libraries
+export LD_LIBRARY_PATH="$PWD/lib:$LD_LIBRARY_PATH"
+export DYLD_LIBRARY_PATH="$PWD/lib:$DYLD_LIBRARY_PATH"
 
-if ! python3 -c "import whisper" 2>/dev/null; then
-    echo "Whisper not installed. Installing..."
-    pip3 install openai-whisper
-
-    if [ $? -ne 0 ]; then
-        echo "Failed to install Whisper"
-        echo "Please install manually: pip3 install openai-whisper"
-        exit 1
-    fi
-    echo "✓ Whisper installed"
-fi
-
-echo "Starting real-time transcription..."
+echo "Starting real-time transcription with Vosk..."
 sbt run
