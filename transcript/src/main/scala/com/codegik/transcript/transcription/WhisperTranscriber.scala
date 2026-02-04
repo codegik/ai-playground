@@ -15,22 +15,22 @@ class WhisperTranscriber(modelName: String = "base"):
 
   private val tempDir = Files.createTempDirectory("whisper-transcript").toFile
   tempDir.deleteOnExit()
-  
+
   /**
    * Initialize the Whisper model (check if Python Whisper is installed)
    */
   def initialize(): Try[Unit] = Try {
     println(s"Checking for Whisper installation...")
-    
+
     // Check if whisper is installed
     val checkCmd = Seq("python3", "-c", "import whisper; print('OK')")
     val result = checkCmd.!!.trim
-    
+
     if result != "OK" then
       throw RuntimeException(
         "Whisper not installed. Install with: pip install openai-whisper"
       )
-    
+
     println(s"✓ Whisper (model: $modelName) is available")
     println("Note: Model will be downloaded automatically on first use")
   }
