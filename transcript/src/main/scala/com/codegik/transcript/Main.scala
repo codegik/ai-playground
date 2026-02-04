@@ -14,21 +14,21 @@ object Main:
 
   def main(args: Array[String]): Unit =
     println("=" * 60)
-    println("Real-Time Audio Transcription System (Vosk)")
+    println("Real-Time Audio Transcription System")
     println("=" * 60)
 
-    // Auto-detect model path or use provided argument
-    val modelPath = args.headOption.getOrElse {
-      findVoskModel().getOrElse {
-        printModelInstructions()
-        System.exit(1)
-        "" // Won't reach here
-      }
-    }
+    // Parse arguments: [engine] [model_path_or_name]
+    // engine: "vosk" or "whisper" (default: auto-detect)
+    // model: model path for vosk, or model name for whisper
+    val (engineType, modelParam) = parseArguments(args)
+
+    println(s"Engine: $engineType")
+    println("=" * 60)
 
     // Create the transcription engine
     val engine = RealtimeTranscriptionEngine(
-      modelPath = modelPath,
+      engineType = engineType,
+      modelParam = modelParam,
       chunkDurationMs = 1000 // Process audio in 1-second chunks for real-time
     )
 
@@ -80,10 +80,10 @@ object Main:
    */
   private def findVoskModel(): Option[String] =
     val modelsDir = new java.io.File("models")
-    
+
     if !modelsDir.exists() || !modelsDir.isDirectory then
       return None
-    
+
     // Look for any directory in models/ that looks like a Vosk model
     val modelDirs = modelsDir.listFiles()
       .filter(_.isDirectory)
@@ -94,7 +94,7 @@ object Main:
         val hasGraph = new java.io.File(dir, "graph").exists()
         hasAm || hasConf || hasGraph
       }
-    
+
     if modelDirs.nonEmpty then
       val selectedModel = s"models/${modelDirs.head.getName}"
       println(s"Auto-detected model: $selectedModel")
