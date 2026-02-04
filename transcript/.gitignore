@@ -1,5 +1,7 @@
 .idea/
 target/
+lib/
+models/
 project/target/
 project/project/
 *.class
@@ -14,4 +16,4 @@ project/project/
 .bsp/
 .metals/
 .vscode/
-models/*.bin
+*.bin
