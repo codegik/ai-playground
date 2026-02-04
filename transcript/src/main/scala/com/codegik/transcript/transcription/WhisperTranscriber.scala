@@ -1,184 +1,129 @@
 package com.codegik.transcript.transcription
 
-import scala.util.{Try, Using}
-import java.nio.file.Files
-import java.io.{File, BufferedReader, InputStreamReader, PrintWriter}
-import javax.sound.sampled.{AudioFileFormat, AudioFormat, AudioInputStream, AudioSystem}
-import java.io.ByteArrayInputStream
+import scala.util.Try
+import java.nio.file.{Files, Paths}
+import org.vosk.{Model, Recognizer}
+import com.google.gson.JsonParser
 
 /**
- * Real-time audio transcription using Whisper via a PERSISTENT Python process
- * This keeps the model loaded in memory, making it 10-20x faster!
+ * Real-time audio transcription using Vosk
+ * Much faster than Whisper for real-time streaming!
+ * Requires: Download Vosk model
  */
-class WhisperTranscriber(modelName: String = "tiny"):
+class WhisperTranscriber(modelPath: String = "models/vosk-model-small-en-us-0.15"):
 
-  private val tempDir = Files.createTempDirectory("whisper-transcript").toFile
-  tempDir.deleteOnExit()
-
-  private var whisperProcess: Option[Process] = None
-  private var processInput: Option[PrintWriter] = None
-  private var processOutput: Option[BufferedReader] = None
+  private var model: Option[Model] = None
+  private var recognizer: Option[Recognizer] = None
 
   /**
-   * Initialize the Whisper model by starting a persistent Python process
+   * Initialize the Vosk model
    */
   def initialize(): Try[Unit] = Try {
-    println(s"Starting Whisper server (model: $modelName)...")
-    println("This loads the model ONCE and keeps it in memory for speed!")
+    println(s"Loading Vosk model from: $modelPath")
 
-    // Create the Python script
-    val scriptFile = new File(tempDir, "whisper_server.py")
-    val scriptContent = s"""#!/usr/bin/env python3
-import sys
-import json
-import whisper
-import warnings
-warnings.filterwarnings("ignore")
+    if !Files.exists(Paths.get(modelPath)) then
+      throw RuntimeException(
+        s"Model not found at: $modelPath\n" +
+        "Download a model from: https://alphacephei.com/vosk/models\n" +
+        "Example:\n" +
+        "  mkdir -p models\n" +
+        "  cd models\n" +
+        "  wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip\n" +
+        "  unzip vosk-model-small-en-us-0.15.zip"
+      )
 
-print("Loading Whisper model: $modelName...", file=sys.stderr, flush=True)
-model = whisper.load_model("$modelName")
-print("✓ Model loaded and ready!", file=sys.stderr, flush=True)
-print("READY", flush=True)
+    // Load model (this is done once and reused for all transcriptions!)
+    val voskModel = new Model(modelPath)
+    model = Some(voskModel)
 
-while True:
-    try:
-        line = sys.stdin.readline()
-        if not line:
-            break
+    // Create recognizer for 16kHz audio
+    val voskRecognizer = new Recognizer(voskModel, 16000)
+    recognizer = Some(voskRecognizer)
 
-        audio_path = line.strip()
-        if not audio_path or audio_path == "QUIT":
-            break
-
-        result = model.transcribe(audio_path, fp16=False)
-        output = {"text": result["text"], "language": result["language"]}
-        print(json.dumps(output), flush=True)
-
-    except Exception as e:
-        output = {"text": "", "language": "unknown", "error": str(e)}
-        print(json.dumps(output), flush=True)
-"""
-
-    Files.writeString(scriptFile.toPath, scriptContent)
-    scriptFile.setExecutable(true)
-
-    // Start the Python process
-    val processBuilder = new ProcessBuilder("python3", scriptFile.getAbsolutePath)
-    processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
-
-    val process = processBuilder.start()
-    whisperProcess = Some(process)
-
-    // Setup I/O streams
-    processInput = Some(new PrintWriter(process.getOutputStream, true))
-    processOutput = Some(new BufferedReader(new InputStreamReader(process.getInputStream)))
-
-    // Wait for READY signal
-    val ready = processOutput.get.readLine()
-    if ready != "READY" then
-      throw RuntimeException(s"Whisper server failed to start. Got: $ready")
-
-    println(s"✓ Whisper server ready! (Model loaded once in memory)")
+    println(s"✓ Vosk model loaded successfully")
+    println("✓ Ready for real-time transcription!")
   }
 
   /**
-   * Transcribe audio data using the persistent process
+   * Transcribe audio data in real-time
+   * @param audioData Raw audio bytes (16kHz, 16-bit, mono PCM)
+   * @param detectLanguage Whether to detect language automatically (not used in Vosk)
+   * @return Transcribed text and detected language
    */
   def transcribe(
     audioData: Array[Byte],
     detectLanguage: Boolean = true,
     language: Option[String] = None
   ): Try[TranscriptionResult] = Try {
-    if audioData.isEmpty then
-      TranscriptionResult("", None, 0.0f)
-    else
-      // Save audio to temporary WAV file
-      val tempFile = File.createTempFile("audio-", ".wav", tempDir)
-      saveAsWav(audioData, tempFile)
+    recognizer match
+      case Some(rec) =>
+        if audioData.isEmpty then
+          TranscriptionResult("", Some("en"), 0.0f)
+        else
+          // Feed audio data to recognizer
+          rec.acceptWaveForm(audioData, audioData.length)
 
-      try {
-        // Send file path to Python process
-        processInput.get.println(tempFile.getAbsolutePath)
+          // Get partial result (this is very fast!)
+          val resultJson = rec.getPartialResult()
 
-        // Read response
-        val response = processOutput.get.readLine()
-        if response == null then
-          throw RuntimeException("Whisper server stopped responding")
+          // Parse JSON result
+          parseVoskResult(resultJson)
 
-        // Parse JSON response
-        parseWhisperOutput(response)
-      } finally {
-        tempFile.delete()
-      }
+      case None =>
+        throw IllegalStateException("Vosk model not initialized. Call initialize() first.")
   }
 
   /**
-   * Save audio bytes as WAV file
+   * Get final result (call this when audio stream ends)
    */
-  private def saveAsWav(audioData: Array[Byte], file: File): Unit =
-    val audioFormat = AudioFormat(
-      16000.0f,  // sample rate
-      16,        // sample size in bits
-      1,         // channels (mono)
-      true,      // signed
-      false      // little endian
-    )
-
-    val audioInputStream = AudioInputStream(
-      ByteArrayInputStream(audioData),
-      audioFormat,
-      audioData.length / audioFormat.getFrameSize
-    )
-
-    AudioSystem.write(
-      audioInputStream,
-      AudioFileFormat.Type.WAVE,
-      file
-    )
+  def getFinalResult(): TranscriptionResult =
+    recognizer match
+      case Some(rec) =>
+        val resultJson = rec.getFinalResult()
+        parseVoskResult(resultJson)
+      case None =>
+        TranscriptionResult("", Some("en"), 0.0f)
 
   /**
-   * Parse Whisper JSON output
+   * Parse Vosk JSON result
    */
-  private def parseWhisperOutput(jsonOutput: String): TranscriptionResult =
-    val textPattern = """"text":\s*"([^"]*)"""".r
-    val langPattern = """"language":\s*"([^"]*)"""".r
-
-    val text = textPattern.findFirstMatchIn(jsonOutput)
-      .map(_.group(1).trim)
-      .getOrElse("")
-
-    val lang = langPattern.findFirstMatchIn(jsonOutput)
-      .map(_.group(1))
-
-    TranscriptionResult(text, lang, 1.0f)
-
-  /**
-   * Release resources and stop the Python process
-   */
-  def close(): Unit =
+  private def parseVoskResult(jsonResult: String): TranscriptionResult =
     try {
-      processInput.foreach { writer =>
-        writer.println("QUIT")
-        writer.close()
-      }
-      processOutput.foreach(_.close())
-      whisperProcess.foreach { p =>
-        p.waitFor()
-        p.destroy()
-      }
+      val parser = JsonParser.parseString(jsonResult)
+      val jsonObject = parser.getAsJsonObject
+
+      val text = if jsonObject.has("partial") then
+        jsonObject.get("partial").getAsString
+      else if jsonObject.has("text") then
+        jsonObject.get("text").getAsString
+      else
+        ""
+
+      TranscriptionResult(text.trim, Some("en"), 1.0f)
     } catch {
-      case _: Exception => // Ignore cleanup errors
+      case e: Exception =>
+        TranscriptionResult("", Some("en"), 0.0f)
     }
 
-    whisperProcess = None
-    processInput = None
-    processOutput = None
+  /**
+   * Reset recognizer (for starting fresh)
+   */
+  def reset(): Unit =
+    recognizer.foreach(_.reset())
 
-    // Clean up temp directory
-    tempDir.listFiles().foreach(_.delete())
-    tempDir.delete()
-
-    println("✓ Whisper server stopped")
+  /**
+   * Release resources
+   */
+  def close(): Unit =
+    recognizer.foreach { rec =>
+      rec.close()
+    }
+    model.foreach { m =>
+      m.close()
+    }
+    recognizer = None
+    model = None
+    println("✓ Vosk model released")
 
 /**
  * Result of transcription

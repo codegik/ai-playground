@@ -14,7 +14,7 @@ import java.io.ByteArrayOutputStream
  */
 class RealtimeTranscriptionEngine(
   modelPath: String,
-  chunkDurationMs: Int = 2000, // Process audio in 2-second chunks
+  chunkDurationMs: Int = 1000, // Process audio in 1-second chunks for better real-time performance
   silenceThreshold: Float = 0.01f
 )(using ExecutionContext):
 

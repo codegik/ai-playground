@@ -7,6 +7,12 @@ scalaVersion := "3.5.2"
 javacOptions ++= Seq("-source", "25", "-target", "25")
 
 libraryDependencies ++= Seq(
+  // Vosk for real-time speech recognition
+  "com.alphacephei" % "vosk" % "0.3.45",
+  
+  // JSON parsing for results
+  "com.google.code.gson" % "gson" % "2.10.1",
+
   // Audio processing (built-in Java Sound API)
 
   // Logging
