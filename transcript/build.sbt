@@ -8,13 +8,9 @@ javacOptions ++= Seq("-source", "25", "-target", "25")
 
 libraryDependencies ++= Seq(
   // Whisper JNI bindings for local inference
-  "io.github.givimad" % "whisperjni" % "1.6.2",
+  "io.github.givimad" % "whisperjni" % "1.5.0",
 
-  // Audio processing
-  "javax.sound" % "javax.sound-midi" % "1.0" % "provided",
-
-  // Language detection (optional, Whisper can detect language)
-  "com.optimaize.languagedetector" % "language-detector" % "0.6",
+  // Audio processing (built-in Java Sound API)
 
   // Logging
   "ch.qos.logback" % "logback-classic" % "1.5.6",
