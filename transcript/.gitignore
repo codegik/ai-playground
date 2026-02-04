@@ -1,0 +1,17 @@
+.idea/
+target/
+project/target/
+project/project/
+*.class
+*.log
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+.bsp/
+.metals/
+.vscode/
+models/*.bin
