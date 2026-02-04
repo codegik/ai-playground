@@ -1,35 +1,38 @@
 package com.codegik.transcript.transcription
 
-import io.github.givimad.whisperjni.WhisperJNI
-import io.github.givimad.whisperjni.WhisperContext
-import io.github.givimad.whisperjni.WhisperFullParams
-import scala.util.{Try, Success, Failure, Using}
+import scala.util.{Try, Success, Failure}
+import scala.sys.process.*
 import java.nio.file.{Path, Paths, Files}
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
+import java.io.{File, FileOutputStream}
+import javax.sound.sampled.{AudioFileFormat, AudioFormat, AudioInputStream, AudioSystem}
+import java.io.ByteArrayInputStream
 
 /**
- * Real-time audio transcription using Whisper model running locally
+ * Real-time audio transcription using Whisper via Python
+ * Requires: pip install openai-whisper
  */
-class WhisperTranscriber(modelPath: String):
+class WhisperTranscriber(modelName: String = "base"):
 
-  private var whisperContext: Option[WhisperContext] = None
-  private val whisper = new WhisperJNI()
-
+  private val tempDir = Files.createTempDirectory("whisper-transcript").toFile
+  tempDir.deleteOnExit()
+  
   /**
-   * Initialize the Whisper model
+   * Initialize the Whisper model (check if Python Whisper is installed)
    */
   def initialize(): Try[Unit] = Try {
-    println(s"Loading Whisper model from: $modelPath")
-
-    if !Files.exists(Paths.get(modelPath)) then
-      throw RuntimeException(s"Model file not found: $modelPath")
-
-    // Load the model
-    val ctx = whisper.init(Paths.get(modelPath))
-    whisperContext = Some(ctx)
-
-    println("✓ Whisper model loaded successfully")
+    println(s"Checking for Whisper installation...")
+    
+    // Check if whisper is installed
+    val checkCmd = Seq("python3", "-c", "import whisper; print('OK')")
+    val result = checkCmd.!!.trim
+    
+    if result != "OK" then
+      throw RuntimeException(
+        "Whisper not installed. Install with: pip install openai-whisper"
+      )
+    
+    println(s"✓ Whisper (model: $modelName) is available")
+    println("Note: Model will be downloaded automatically on first use")
   }
 
   /**

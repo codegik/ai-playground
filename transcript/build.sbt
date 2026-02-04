@@ -7,8 +7,12 @@ scalaVersion := "3.5.2"
 javacOptions ++= Seq("-source", "25", "-target", "25")
 
 libraryDependencies ++= Seq(
-  // Whisper JNI bindings for local inference
-  "io.github.givimad" % "whisperjni" % "1.5.0",
+  // Vosk for offline speech recognition (alternative to Whisper)
+  "net.java.dev.jna" % "jna" % "5.14.0",
+
+  // JSON parsing for Vosk results
+  "io.circe" %% "circe-core" % "0.14.9",
+  "io.circe" %% "circe-parser" % "0.14.9",
 
   // Audio processing (built-in Java Sound API)
 
