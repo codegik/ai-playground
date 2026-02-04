@@ -17,8 +17,14 @@ object Main:
     println("Real-Time Audio Transcription System (Vosk)")
     println("=" * 60)
 
-    // Model path - Vosk model directory
-    val modelPath = args.headOption.getOrElse("models/vosk-model-small-en-us-0.15")
+    // Auto-detect model path or use provided argument
+    val modelPath = args.headOption.getOrElse {
+      findVoskModel().getOrElse {
+        printModelInstructions()
+        System.exit(1)
+        "" // Won't reach here
+      }
+    }
 
     // Create the transcription engine
     val engine = RealtimeTranscriptionEngine(
@@ -70,7 +76,34 @@ object Main:
     println(f"$timestamp $langInfo%10s | ${result.text}")
 
   /**
-   * Print instructions for installing Vosk
+   * Auto-detect Vosk model in models directory
+   */
+  private def findVoskModel(): Option[String] =
+    val modelsDir = new java.io.File("models")
+    
+    if !modelsDir.exists() || !modelsDir.isDirectory then
+      return None
+    
+    // Look for any directory in models/ that looks like a Vosk model
+    val modelDirs = modelsDir.listFiles()
+      .filter(_.isDirectory)
+      .filter { dir =>
+        // Check if it has typical Vosk model structure (am, conf, graph folders)
+        val hasAm = new java.io.File(dir, "am").exists()
+        val hasConf = new java.io.File(dir, "conf").exists()
+        val hasGraph = new java.io.File(dir, "graph").exists()
+        hasAm || hasConf || hasGraph
+      }
+    
+    if modelDirs.nonEmpty then
+      val selectedModel = s"models/${modelDirs.head.getName}"
+      println(s"Auto-detected model: $selectedModel")
+      Some(selectedModel)
+    else
+      None
+
+  /**
+   * Print instructions for downloading Vosk models
    */
   private def printModelInstructions(): Unit =
     println()
