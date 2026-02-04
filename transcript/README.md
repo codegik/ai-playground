@@ -24,14 +24,7 @@ A Scala-based real-time audio transcription system that runs **100% locally** wi
 First, install OpenAI's Whisper via Python:
 
 ```bash
-# Option 1: Using pip
-pip install openai-whisper
-
-# Option 2: Using conda
-conda install -c conda-forge openai-whisper
-
-# Option 3: Using pip3 explicitly
-pip3 install openai-whisper
+./setup.sh
 ```
 
 **Note**: Models are downloaded automatically on first use.
