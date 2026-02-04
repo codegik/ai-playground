@@ -29,7 +29,7 @@ else
     echo "✓ SBT detected"
 fi
 
-# Check for Python 3
+ Check for Python 3
 echo "Checking Python 3..."
 if ! command -v python3 &> /dev/null; then
     echo "❌ Error: Python 3 not found"
@@ -40,13 +40,15 @@ else
     echo "✓ $PYTHON_VERSION detected"
 fi
 
-# Check/Install Whisper
+# Check/Install faster-whisper (much faster and more accurate than Vosk)
 echo ""
-echo "Checking for Whisper installation..."
-if python3 -c "import whisper" 2>/dev/null; then
-    echo "✓ Whisper is already installed"
+echo "Checking for faster-whisper installation..."
+if python3 -c "import faster_whisper" 2>/dev/null; then
+    echo "✓ faster-whisper is already installed"
 else
-    echo "Whisper not found. Installing..."
+    echo "faster-whisper not found. Installing..."
+    echo ""
+    echo "This will install faster-whisper (optimized for real-time transcription)"
     echo ""
     echo "Choose installation method:"
     echo "  1. pip3 install (recommended)"
@@ -56,13 +58,13 @@ else
     read choice
 
     if [ "$choice" != "2" ]; then
-        pip3 install openai-whisper
+        pip3 install faster-whisper
 
         if [ $? -eq 0 ]; then
-            echo "✓ Whisper installed successfully"
+            echo "✓ faster-whisper installed successfully"
         else
-            echo "❌ Failed to install Whisper"
-            echo "Try manually: pip3 install openai-whisper"
+            echo "❌ Failed to install faster-whisper"
+            echo "Try manually: pip3 install faster-whisper"
             exit 1
         fi
     fi
@@ -79,19 +81,18 @@ if [ $? -eq 0 ]; then
     echo "✓ Setup completed successfully!"
     echo "=================================================="
     echo ""
-    echo "Available models:"
-    echo "  - tiny   (~75 MB)  - Fastest"
-    echo "  - base   (~142 MB) - Recommended"
-    echo "  - small  (~466 MB) - Better accuracy"
-    echo "  - medium (~1.5 GB) - High accuracy"
-    echo "  - large  (~2.9 GB) - Best accuracy"
+    echo "This system uses faster-whisper for Google-like accuracy!"
     echo ""
-    echo "Models download automatically on first use."
+    echo "Available models (download automatically on first use):"
+    echo "  - tiny   (~75 MB)  - Fast but less accurate"
+    echo "  - base   (~142 MB) - Good balance (RECOMMENDED)"
+    echo "  - small  (~466 MB) - Better accuracy"
+    echo "  - medium (~1.5 GB) - High accuracy (like Google Translate)"
     echo ""
     echo "To run the application:"
-    echo "  sbt run                  # Uses 'base' model"
-    echo "  sbt \"run tiny\"         # Uses 'tiny' model (fastest)"
-    echo "  sbt \"run small\"        # Uses 'small' model (better accuracy)"
+    echo "  sbt run                  # Auto-detects any Vosk model OR uses faster-whisper"
+    echo ""
+    echo "Note: First run will download the model (may take a few minutes)"
     echo ""
 else
     echo "❌ Compilation failed"
