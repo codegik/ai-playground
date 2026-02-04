@@ -13,13 +13,14 @@ import java.io.ByteArrayOutputStream
  * Continuously captures audio and transcribes it in real-time
  */
 class RealtimeTranscriptionEngine(
-  modelPath: String,
+  engineType: String,  // "vosk" or "whisper"
+  modelParam: String,  // model path for vosk, model name for whisper
   chunkDurationMs: Int = 1000, // Process audio in 1-second chunks for real-time
   silenceThreshold: Float = 0.01f
 )(using ExecutionContext):
-  
+
   private val microphone = MicrophoneCapture()
-  private val transcriber = WhisperTranscriber(modelPath)
+  private val transcriber = WhisperTranscriber(engineType, modelParam)
   private var isRunning = false
   private var transcriptionCallback: Option[TranscriptionResult => Unit] = None
 

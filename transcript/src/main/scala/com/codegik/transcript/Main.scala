@@ -76,6 +76,46 @@ object Main:
     println(f"$timestamp $langInfo%10s | ${result.text}")
 
   /**
+   * Parse command-line arguments
+   * Usage: sbt run [engine] [model]
+   *   engine: vosk, whisper, or auto (default: auto)
+   *   model: model path for vosk, model name for whisper (default: auto-detect)
+   */
+  private def parseArguments(args: Array[String]): (String, String) =
+    args.toList match
+      case Nil =>
+        // No args - auto-detect
+        findVoskModel() match
+          case Some(modelPath) => ("vosk", modelPath)
+          case None => ("whisper", "base")
+
+      case engine :: Nil if engine == "vosk" || engine == "whisper" =>
+        // Engine specified, auto-detect model
+        engine match
+          case "vosk" =>
+            findVoskModel() match
+              case Some(modelPath) => ("vosk", modelPath)
+              case None =>
+                printVoskModelInstructions()
+                System.exit(1)
+                ("vosk", "")
+          case "whisper" => ("whisper", "base")
+          case _ => ("whisper", "base")
+
+      case engine :: model :: _ =>
+        // Both engine and model specified
+        val validEngine = if engine == "vosk" || engine == "whisper" then engine else "whisper"
+        (validEngine, model)
+
+      case other =>
+        // First arg is probably a model path/name - auto-detect engine
+        val param = other.head
+        if Files.exists(Paths.get(param)) then
+          ("vosk", param)
+        else
+          ("whisper", param)
+
+  /**
    * Auto-detect Vosk model in models directory
    */
   private def findVoskModel(): Option[String] =
@@ -97,7 +137,6 @@ object Main:
 
     if modelDirs.nonEmpty then
       val selectedModel = s"models/${modelDirs.head.getName}"
-      println(s"Auto-detected model: $selectedModel")
       Some(selectedModel)
     else
       None
@@ -105,33 +144,51 @@ object Main:
   /**
    * Print instructions for downloading Vosk models
    */
-  private def printModelInstructions(): Unit =
+  private def printVoskModelInstructions(): Unit =
     println()
     println("ERROR: Vosk model not found!")
     println()
-    println("This system uses Vosk for REAL-TIME transcription (much faster than Whisper).")
+    println("Download instructions:")
+    println("  mkdir -p models && cd models")
+    println("  wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip")
+    println("  unzip vosk-model-small-en-us-0.15.zip")
+    println("  cd ..")
     println()
-    println("Installation instructions:")
-    println("  1. Create models directory:")
-    println("     mkdir -p models")
-    println("     cd models")
+
+  /**
+   * Print usage instructions
+   */
+  private def printModelInstructions(): Unit =
     println()
-    println("  2. Download a Vosk model:")
+    println("Real-Time Audio Transcription System")
+    println("=" * 60)
     println()
-    println("  English (US) - Small (~40 MB) - RECOMMENDED FOR REAL-TIME:")
+    println("USAGE:")
+    println("  sbt run                          # Auto-detect engine")
+    println("  sbt \"run vosk\"                  # Use Vosk (fast)")
+    println("  sbt \"run whisper\"               # Use faster-whisper (accurate)")
+    println("  sbt \"run vosk <model_path>\"     # Use specific Vosk model")
+    println("  sbt \"run whisper <model_name>\"  # Use specific Whisper model")
+    println()
+    println("=" * 60)
+    println()
+    println("VOSK SETUP (Fast, less accurate):")
+    println("  1. Download model:")
+    println("     mkdir -p models && cd models")
     println("     wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip")
     println("     unzip vosk-model-small-en-us-0.15.zip")
+    println("     cd ..")
+    println("  2. Run:")
+    println("     sbt \"run vosk\"")
     println()
-    println("  English (US) - Large (~1.8 GB) - Better accuracy:")
-    println("     wget https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip")
-    println("     unzip vosk-model-en-us-0.22.zip")
+    println("FASTER-WHISPER SETUP (Slower, Google-like accuracy):")
+    println("  1. Install:")
+    println("     pip3 install faster-whisper")
+    println("  2. Run:")
+    println("     sbt \"run whisper\"")
     println()
-    println("  Other languages available at:")
-    println("     https://alphacephei.com/vosk/models")
+    println("Available Whisper models: tiny, base, small, medium, large")
+    println("More Vosk models: https://alphacephei.com/vosk/models")
     println()
-    println("  3. Run the application:")
-    println("     sbt run")
-    println()
-    println("  Or specify custom model:")
-    println("     sbt \"run models/vosk-model-en-us-0.22\"")
-    println()
+
+

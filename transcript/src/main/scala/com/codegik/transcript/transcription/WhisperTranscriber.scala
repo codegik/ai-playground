@@ -8,59 +8,69 @@ import java.io.ByteArrayInputStream
 
 /**
  * Real-time audio transcription
- * Tries Vosk first (if model available), otherwise uses faster-whisper for Google-like accuracy
+ * Supports both Vosk (fast) and faster-whisper (accurate)
  */
-class WhisperTranscriber(modelPath: String = "models/vosk-model-small-en-us-0.15"):
+class WhisperTranscriber(engineType: String, modelParam: String):
 
   private val tempDir = Files.createTempDirectory("whisper-transcript").toFile
   tempDir.deleteOnExit()
 
-  // Vosk components (if available)
+  // Vosk components
   private var voskModel: Option[org.vosk.Model] = None
   private var voskRecognizer: Option[org.vosk.Recognizer] = None
 
-  // Faster-whisper components (fallback)
+  // Faster-whisper components
   private var whisperProcess: Option[Process] = None
   private var processInput: Option[PrintWriter] = None
   private var processOutput: Option[BufferedReader] = None
+
   private var usingVosk = false
 
   /**
-   * Initialize - try Vosk first, fallback to faster-whisper
+   * Initialize based on engineType parameter
    */
   def initialize(): Try[Unit] = Try {
-    // Try Vosk first if model exists
-    if Files.exists(Paths.get(modelPath)) then
-      try {
-        println(s"Loading Vosk model from: $modelPath")
-        val model = new org.vosk.Model(modelPath)
-        val recognizer = new org.vosk.Recognizer(model, 16000)
-        voskModel = Some(model)
-        voskRecognizer = Some(recognizer)
-        usingVosk = true
-        println(s"✓ Vosk model loaded successfully")
-        println("✓ Ready for real-time transcription!")
-      } catch {
-        case e: Exception =>
-          println(s"⚠ Vosk failed: ${e.getMessage}")
-          println("Falling back to faster-whisper...")
-          initializeFasterWhisper()
-      }
-    else
-      // No Vosk model, use faster-whisper
-      println("No Vosk model found, using faster-whisper (Google-like accuracy)...")
-      initializeFasterWhisper()
+    engineType.toLowerCase match
+      case "vosk" =>
+        println(s"Initializing Vosk engine...")
+        initializeVosk(modelParam)
+      case "whisper" =>
+        println(s"Initializing faster-whisper engine...")
+        initializeFasterWhisper(modelParam)
+      case _ =>
+        throw RuntimeException(s"Unknown engine type: $engineType. Use 'vosk' or 'whisper'")
   }
+
+  /**
+   * Initialize Vosk
+   */
+  private def initializeVosk(modelPath: String): Unit =
+    println(s"Loading Vosk model from: $modelPath")
+
+    if !Files.exists(Paths.get(modelPath)) then
+      throw RuntimeException(
+        s"Vosk model not found at: $modelPath\n" +
+        "Download from: https://alphacephei.com/vosk/models\n" +
+        "Example: wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip"
+      )
+
+    val model = new org.vosk.Model(modelPath)
+    val recognizer = new org.vosk.Recognizer(model, 16000)
+    voskModel = Some(model)
+    voskRecognizer = Some(recognizer)
+    usingVosk = true
+
+    println(s"✓ Vosk model loaded successfully")
+    println("✓ Engine: Vosk (FAST - lower latency)")
 
   /**
    * Initialize faster-whisper server
    */
-  private def initializeFasterWhisper(): Unit =
+  private def initializeFasterWhisper(modelName: String): Unit =
     val scriptPath = "faster-whisper-server.py"
-    val modelName = "base" // Use base model for good balance
 
     println(s"Starting faster-whisper server (model: $modelName)...")
-    println("First run may take a few minutes to download the model...")
+    println("First run may download the model (~75-500 MB depending on model)...")
 
     val processBuilder = new ProcessBuilder("python3", scriptPath, modelName)
     processBuilder.redirectError(ProcessBuilder.Redirect.INHERIT)
@@ -77,7 +87,8 @@ class WhisperTranscriber(modelPath: String = "models/vosk-model-small-en-us-0.15
       throw RuntimeException(s"faster-whisper server failed to start. Got: $ready")
 
     usingVosk = false
-    println(s"✓ faster-whisper ready! (Google-like accuracy)")
+    println(s"✓ faster-whisper ready!")
+    println(s"✓ Engine: faster-whisper (ACCURATE - Google-like quality)")
 
   /**
    * Transcribe audio data
