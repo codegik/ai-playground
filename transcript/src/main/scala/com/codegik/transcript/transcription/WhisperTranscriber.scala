@@ -1,44 +1,53 @@
 package com.codegik.transcript.transcription
 
 import scala.util.Try
-import scala.sys.process.*
-import java.nio.file.Files
-import java.io.File
-import javax.sound.sampled.{AudioFileFormat, AudioFormat, AudioInputStream, AudioSystem}
-import java.io.ByteArrayInputStream
+import java.nio.file.{Files, Paths}
+import org.vosk.{Model, Recognizer}
+import com.google.gson.JsonParser
 
 /**
- * Real-time audio transcription using Whisper via Python
- * Requires: pip install openai-whisper
+ * Real-time audio transcription using Vosk
+ * Much faster than Whisper for real-time streaming!
+ * Requires: Download Vosk model
  */
-class WhisperTranscriber(modelName: String = "base"):
+class WhisperTranscriber(modelPath: String = "models/vosk-model-small-en-us-0.15"):
 
-  private val tempDir = Files.createTempDirectory("whisper-transcript").toFile
-  tempDir.deleteOnExit()
+  private var model: Option[Model] = None
+  private var recognizer: Option[Recognizer] = None
 
   /**
-   * Initialize the Whisper model (check if Python Whisper is installed)
+   * Initialize the Vosk model
    */
   def initialize(): Try[Unit] = Try {
-    println(s"Checking for Whisper installation...")
+    println(s"Loading Vosk model from: $modelPath")
 
-    // Check if whisper is installed
-    val checkCmd = Seq("python3", "-c", "import whisper; print('OK')")
-    val result = checkCmd.!!.trim
-
-    if result != "OK" then
+    if !Files.exists(Paths.get(modelPath)) then
       throw RuntimeException(
-        "Whisper not installed. Install with: pip install openai-whisper"
+        s"Model not found at: $modelPath\n" +
+        "Download a model from: https://alphacephei.com/vosk/models\n" +
+        "Example:\n" +
+        "  mkdir -p models\n" +
+        "  cd models\n" +
+        "  wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip\n" +
+        "  unzip vosk-model-small-en-us-0.15.zip"
       )
 
-    println(s"✓ Whisper (model: $modelName) is available")
-    println("Note: Model will be downloaded automatically on first use")
+    // Load model (this is done once and reused for all transcriptions!)
+    val voskModel = new Model(modelPath)
+    model = Some(voskModel)
+
+    // Create recognizer for 16kHz audio
+    val voskRecognizer = new Recognizer(voskModel, 16000)
+    recognizer = Some(voskRecognizer)
+
+    println(s"✓ Vosk model loaded successfully")
+    println("✓ Ready for real-time transcription!")
   }
 
   /**
    * Transcribe audio data in real-time
    * @param audioData Raw audio bytes (16kHz, 16-bit, mono PCM)
-   * @param detectLanguage Whether to detect language automatically
+   * @param detectLanguage Whether to detect language automatically (not used in Vosk)
    * @return Transcribed text and detected language
    */
   def transcribe(
@@ -46,78 +55,75 @@ class WhisperTranscriber(modelName: String = "base"):
     detectLanguage: Boolean = true,
     language: Option[String] = None
   ): Try[TranscriptionResult] = Try {
-    if audioData.isEmpty then
-      TranscriptionResult("", None, 0.0f)
-    else
-      // Save audio to temporary WAV file
-      val tempFile = File.createTempFile("audio-", ".wav", tempDir)
-      saveAsWav(audioData, tempFile)
+    recognizer match
+      case Some(rec) =>
+        if audioData.isEmpty then
+          TranscriptionResult("", Some("en"), 0.0f)
+        else
+          // Feed audio data to recognizer
+          rec.acceptWaveForm(audioData, audioData.length)
 
-      try {
-        // Build Whisper command
-        val languageParam = if detectLanguage then "" else language.map(l => s"--language $l").getOrElse("")
-        val cmd = s"python3 -c \"import whisper; import json; model = whisper.load_model('$modelName'); result = model.transcribe('${tempFile.getAbsolutePath}' $languageParam); print(json.dumps({'text': result['text'], 'language': result['language']}))\""
+          // Get partial result (this is very fast!)
+          val resultJson = rec.getPartialResult()
 
-        // Execute Whisper
-        val output = cmd.!!.trim
+          // Parse JSON result
+          parseVoskResult(resultJson)
 
-        // Parse JSON output
-        parseWhisperOutput(output)
-      } finally {
-        tempFile.delete()
-      }
+      case None =>
+        throw IllegalStateException("Vosk model not initialized. Call initialize() first.")
   }
 
   /**
-   * Save audio bytes as WAV file
+   * Get final result (call this when audio stream ends)
    */
-  private def saveAsWav(audioData: Array[Byte], file: File): Unit =
-    val audioFormat = AudioFormat(
-      16000.0f,  // sample rate
-      16,        // sample size in bits
-      1,         // channels (mono)
-      true,      // signed
-      false      // little endian
-    )
-
-    val audioInputStream = AudioInputStream(
-      ByteArrayInputStream(audioData),
-      audioFormat,
-      audioData.length / audioFormat.getFrameSize
-    )
-
-    AudioSystem.write(
-      audioInputStream,
-      AudioFileFormat.Type.WAVE,
-      file
-    )
+  def getFinalResult(): TranscriptionResult =
+    recognizer match
+      case Some(rec) =>
+        val resultJson = rec.getFinalResult()
+        parseVoskResult(resultJson)
+      case None =>
+        TranscriptionResult("", Some("en"), 0.0f)
 
   /**
-   * Parse Whisper Python output
+   * Parse Vosk JSON result
    */
-  private def parseWhisperOutput(jsonOutput: String): TranscriptionResult =
-    // Simple JSON parsing (avoiding heavy dependencies)
-    val textPattern = """"text":\s*"([^"]*)"""".r
-    val langPattern = """"language":\s*"([^"]*)"""".r
+  private def parseVoskResult(jsonResult: String): TranscriptionResult =
+    try {
+      val parser = JsonParser.parseString(jsonResult)
+      val jsonObject = parser.getAsJsonObject
 
-    val text = textPattern.findFirstMatchIn(jsonOutput)
-      .map(_.group(1).trim)
-      .getOrElse("")
+      val text = if jsonObject.has("partial") then
+        jsonObject.get("partial").getAsString
+      else if jsonObject.has("text") then
+        jsonObject.get("text").getAsString
+      else
+        ""
 
-    val lang = langPattern.findFirstMatchIn(jsonOutput)
-      .map(_.group(1))
-      .orElse(Some("unknown"))
+      TranscriptionResult(text.trim, Some("en"), 1.0f)
+    } catch {
+      case e: Exception =>
+        TranscriptionResult("", Some("en"), 0.0f)
+    }
 
-    TranscriptionResult(text, lang, 1.0f)
+  /**
+   * Reset recognizer (for starting fresh)
+   */
+  def reset(): Unit =
+    recognizer.foreach(_.reset())
 
   /**
    * Release resources
    */
   def close(): Unit =
-    // Clean up temp directory
-    tempDir.listFiles().foreach(_.delete())
-    tempDir.delete()
-    println("✓ Whisper resources released")
+    recognizer.foreach { rec =>
+      rec.close()
+    }
+    model.foreach { m =>
+      m.close()
+    }
+    recognizer = None
+    model = None
+    println("✓ Vosk model released")
 
 /**
  * Result of transcription

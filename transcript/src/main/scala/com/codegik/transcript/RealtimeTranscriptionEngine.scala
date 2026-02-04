@@ -13,13 +13,13 @@ import java.io.ByteArrayOutputStream
  * Continuously captures audio and transcribes it in real-time
  */
 class RealtimeTranscriptionEngine(
-  modelName: String,
-  chunkDurationMs: Int = 3000, // Process audio in 3-second chunks
+  modelPath: String,
+  chunkDurationMs: Int = 1000, // Process audio in 1-second chunks for better real-time performance
   silenceThreshold: Float = 0.01f
 )(using ExecutionContext):
-
+  
   private val microphone = MicrophoneCapture()
-  private val transcriber = WhisperTranscriber(modelName)
+  private val transcriber = WhisperTranscriber(modelPath)
   private var isRunning = false
   private var transcriptionCallback: Option[TranscriptionResult => Unit] = None
 

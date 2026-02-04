@@ -14,16 +14,16 @@ object Main:
 
   def main(args: Array[String]): Unit =
     println("=" * 60)
-    println("Real-Time Audio Transcription System")
+    println("Real-Time Audio Transcription System (Vosk)")
     println("=" * 60)
 
-    // Model name (tiny, base, small, medium, large)
-    val modelName = args.headOption.getOrElse("base")
+    // Model path - Vosk model directory
+    val modelPath = args.headOption.getOrElse("models/vosk-model-small-en-us-0.15")
 
     // Create the transcription engine
     val engine = RealtimeTranscriptionEngine(
-      modelName = modelName,
-      chunkDurationMs = 1000 // Process audio in 3-second chunks
+      modelPath = modelPath,
+      chunkDurationMs = 1000 // Process audio in 1-second chunks for real-time performance
     )
 
     // Initialize the engine
@@ -70,32 +70,35 @@ object Main:
     println(f"$timestamp $langInfo%10s | ${result.text}")
 
   /**
-   * Print instructions for installing Whisper
+   * Print instructions for installing Vosk
    */
   private def printModelInstructions(): Unit =
     println()
-    println("ERROR: Whisper not installed!")
+    println("ERROR: Vosk model not found!")
     println()
-    println("This system uses OpenAI's Whisper via Python.")
+    println("This system uses Vosk for REAL-TIME transcription (much faster than Whisper).")
     println()
     println("Installation instructions:")
-    println("  1. Install Python 3 (if not already installed)")
+    println("  1. Create models directory:")
+    println("     mkdir -p models")
+    println("     cd models")
     println()
-    println("  2. Install Whisper:")
-    println("     pip install openai-whisper")
+    println("  2. Download a Vosk model:")
     println()
-    println("  Or with conda:")
-    println("     conda install -c conda-forge openai-whisper")
+    println("  English (US) - Small (~40 MB) - RECOMMENDED FOR REAL-TIME:")
+    println("     wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip")
+    println("     unzip vosk-model-small-en-us-0.15.zip")
     println()
-    println("Available models (downloaded automatically on first use):")
-    println("  - tiny   (~75 MB)  - Fastest, less accurate")
-    println("  - base   (~142 MB) - Good balance (RECOMMENDED)")
-    println("  - small  (~466 MB) - Better accuracy")
-    println("  - medium (~1.5 GB) - High accuracy")
-    println("  - large  (~2.9 GB) - Best accuracy, slowest")
+    println("  English (US) - Large (~1.8 GB) - Better accuracy:")
+    println("     wget https://alphacephei.com/vosk/models/vosk-model-en-us-0.22.zip")
+    println("     unzip vosk-model-en-us-0.22.zip")
     println()
-    println("After installation, run:")
-    println("  sbt run                  # Uses 'base' model")
-    println("  sbt \"run tiny\"         # Uses 'tiny' model for faster processing")
-    println("  sbt \"run small\"        # Uses 'small' model for better accuracy")
+    println("  Other languages available at:")
+    println("     https://alphacephei.com/vosk/models")
+    println()
+    println("  3. Run the application:")
+    println("     sbt run")
+    println()
+    println("  Or specify custom model:")
+    println("     sbt \"run models/vosk-model-en-us-0.22\"")
     println()
