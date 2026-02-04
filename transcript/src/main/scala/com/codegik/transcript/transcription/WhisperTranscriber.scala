@@ -22,14 +22,25 @@ class WhisperTranscriber(modelPath: String = "models/vosk-model-small-en-us-0.15
     println(s"Loading Vosk model from: $modelPath")
 
     if !Files.exists(Paths.get(modelPath)) then
+      // Check what models are available
+      val modelsDir = new java.io.File("models")
+      val availableModels = if modelsDir.exists() && modelsDir.isDirectory then
+        modelsDir.listFiles()
+          .filter(_.isDirectory)
+          .map(_.getName)
+          .mkString(", ")
+      else
+        "none (models directory not found)"
+
       throw RuntimeException(
         s"Model not found at: $modelPath\n" +
+        s"Available models in models/: $availableModels\n\n" +
         "Download a model from: https://alphacephei.com/vosk/models\n" +
         "Example:\n" +
-        "  mkdir -p models\n" +
-        "  cd models\n" +
+        "  mkdir -p models && cd models\n" +
         "  wget https://alphacephei.com/vosk/models/vosk-model-small-en-us-0.15.zip\n" +
-        "  unzip vosk-model-small-en-us-0.15.zip"
+        "  unzip vosk-model-small-en-us-0.15.zip\n" +
+        "  cd .."
       )
 
     // Load model (this is done once and reused for all transcriptions!)
@@ -68,11 +79,11 @@ class WhisperTranscriber(modelPath: String = "models/vosk-model-small-en-us-0.15
 
           // Parse JSON result
           val result = parseVoskResult(resultJson)
-          
+
           // Reset recognizer for next chunk to prevent accumulation
           if result.text.nonEmpty then
             rec.reset()
-          
+
           result
 
       case None =>
