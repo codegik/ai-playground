@@ -27,8 +27,33 @@
 - Does your architecture approach differ by project size, team size, or domain?
 - How do external constraints (budget, timeline, compliance) shape your architecture?
 
-## Code Review & Assessment
-- Do you read the code?
-- Are you happy with the architecture? What do you look for?
-- What issues are you seeing?
-- How can we make it better?
+
+# Do you read the code?
+- Essential for understanding actual implementation vs documented
+  architecture
+- Code reveals patterns, coupling, dependencies that diagrams miss
+- Shows what's actually maintained vs abandoned
+- Critical for spotting architectural drift
+
+# Are you happy with the architecture? What do you look for?
+- Clear boundaries and responsibilities
+- Easy to locate where changes should happen
+- Tests reflect the architecture
+- Low cognitive load when navigating the codebase
+- Consistent patterns that don't require constant decisions
+
+# What issues are you seeing?
+- God objects or classes doing too much
+- Circular dependencies
+- Tight coupling making changes risky
+- Inconsistent patterns across similar features
+- Missing abstractions or premature abstractions
+- Configuration scattered everywhere
+
+# How can we make it better?
+- Identify pain points from actual development work
+- Refactor incrementally, not big bang rewrites
+- Document decisions as you go
+- Make the architecture testable
+- Remove dead code and unused abstractions
+- Align team on patterns before implementing
