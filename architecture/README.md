@@ -3,12 +3,11 @@
 ## Decision-Making & Process
 - How do you decide when architecture needs upfront planning vs emergent design?
 - What frameworks do you use for making architectural trade-offs?
-- How do you capture and communicate architectural decisions (ADRs, diagrams, documentation)?
+- How do you capture and communicate architectural decisions (diagrams, documentation)?
 - When do you say "good enough" vs pursue the ideal solution?
 
 ## Team & Communication
 - How do you align stakeholders with different priorities on architectural direction?
-- What's the balance between architect-driven vs team-collaborative architecture?
 - How do you onboard new team members to existing architectural decisions?
 - How do you handle disagreements about architectural approaches?
 
