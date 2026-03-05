@@ -6,7 +6,7 @@
 - How do you capture and communicate architectural decisions (diagrams, documentation)?
 - When do you say "good enough" vs pursue the ideal solution?
 
-## Team & Communication
+## Team Structure & Communication
 - How do you align stakeholders with different priorities on architectural direction?
 - How do you onboard new team members to existing architectural decisions?
 - How do you handle disagreements about architectural approaches?
