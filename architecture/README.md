@@ -26,3 +26,9 @@
 ## Context-Specific
 - Does your architecture approach differ by project size, team size, or domain?
 - How do external constraints (budget, timeline, compliance) shape your architecture?
+
+## Code Review & Assessment
+- Do you read the code?
+- Are you happy with the architecture? What do you look for?
+- What issues are you seeing?
+- How can we make it better?
