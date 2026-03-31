@@ -1,6 +1,16 @@
 import math
 import random
 
+# is a mathematical function that squashes any input value into a range between 0 and 1.
+# It's used as an activation function in neural networks.
+# Input (x)    →    sigmoid(x)
+# -10          →    0.00005  (almost 0)
+# -2           →    0.12
+# -1           →    0.27
+#  0           →    0.50
+#  1           →    0.73
+#  2           →    0.88
+#  10          →    0.99995  (almost 1)
 def sigmoid(x):
     return 1 / (1 + math.exp(-x))
 

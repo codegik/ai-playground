@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backpropagation Video</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #1a1a1a;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        #video-container {
+            position: relative;
+            background: #000;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        }
+
+        #frame-display {
+            width: 800px;
+            height: 600px;
+            background: #000;
+        }
+
+        .controls {
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #4CAF50;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.pause {
+            background: #FF9800;
+        }
+
+        button.pause:hover {
+            background: #F57C00;
+        }
+
+        .speed-control {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .speed-btn {
+            padding: 8px 16px;
+            font-size: 14px;
+            background: #2196F3;
+        }
+
+        .speed-btn:hover {
+            background: #1976D2;
+        }
+
+        .speed-btn.active {
+            background: #FF5722;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #4CAF50;
+            transition: width 0.1s;
+        }
+
+        .info {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <div id="video-container">
+        <div id="frame-display"></div>
+    </div>
+
+    <div class="controls">
+        <button id="play-btn" onclick="togglePlay()">▶ Play</button>
+        <button id="restart-btn" onclick="restart()">↻ Restart</button>
+
+        <div class="speed-control">
+            <span>Speed:</span>
+            <button class="speed-btn" onclick="setSpeed(0.5)">0.5x</button>
+            <button class="speed-btn active" onclick="setSpeed(1)">1x</button>
+            <button class="speed-btn" onclick="setSpeed(2)">2x</button>
+        </div>
+    </div>
+
+    <div class="controls" style="width: 800px;">
+        <div class="progress-bar" onclick="seekTo(event)">
+            <div class="progress-fill" id="progress"></div>
+        </div>
+    </div>
+
+    <div class="info" id="frame-info">Frame 1 of 40</div>
+
+    <script>
+        const totalFrames = 40;
+        let currentFrame = 0;
+        let isPlaying = false;
+        let interval;
+        let speed = 1;
+
+        function loadFrame(frameNum) {
+            const frameDisplay = document.getElementById('frame-display');
+            const frameFile = `frames/frame_${String(frameNum).padStart(4, '0')}.svg`;
+
+            fetch(frameFile)
+                .then(response => response.text())
+                .then(svg => {
+                    frameDisplay.innerHTML = svg;
+                    updateInfo();
+                    updateProgress();
+                })
+                .catch(err => console.error('Error loading frame:', err));
+        }
+
+        function updateInfo() {
+            const phase = currentFrame % 2 === 0 ? 'Forward Pass' : 'Backward Pass';
+            const iteration = Math.floor(currentFrame / 8);
+            document.getElementById('frame-info').textContent =
+                `Frame ${currentFrame + 1} of ${totalFrames} - Iteration ${iteration} - ${phase}`;
+        }
+
+        function updateProgress() {
+            const progress = ((currentFrame + 1) / totalFrames) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+        }
+
+        function nextFrame() {
+            currentFrame = (currentFrame + 1) % totalFrames;
+            loadFrame(currentFrame);
+
+            if (currentFrame === 0 && isPlaying) {
+                togglePlay();
+            }
+        }
+
+        function togglePlay() {
+            isPlaying = !isPlaying;
+            const btn = document.getElementById('play-btn');
+
+            if (isPlaying) {
+                btn.textContent = '⏸ Pause';
+                btn.classList.add('pause');
+                loadFrame(currentFrame);
+                interval = setInterval(nextFrame, 1000 / speed);
+            } else {
+                btn.textContent = '▶ Play';
+                btn.classList.remove('pause');
+                clearInterval(interval);
+            }
+        }
+
+        function restart() {
+            if (isPlaying) {
+                isPlaying = false;
+                const btn = document.getElementById('play-btn');
+                btn.textContent = '▶ Play';
+                btn.classList.remove('pause');
+                clearInterval(interval);
+            }
+            currentFrame = 0;
+            document.getElementById('frame-display').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:600px;font-size:24px;color:#666;">Press Play to start</div>';
+            document.getElementById('progress').style.width = '0%';
+            document.getElementById('frame-info').textContent = 'Ready to start';
+        }
+
+        function setSpeed(newSpeed) {
+            speed = newSpeed;
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            if (isPlaying) {
+                clearInterval(interval);
+                interval = setInterval(nextFrame, 1000 / speed);
+            }
+        }
+
+        function seekTo(event) {
+            const bar = event.currentTarget;
+            const rect = bar.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const percentage = x / rect.width;
+            currentFrame = Math.floor(percentage * totalFrames);
+            if (currentFrame >= totalFrames) currentFrame = totalFrames - 1;
+            loadFrame(currentFrame);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                togglePlay();
+            } else if (e.code === 'ArrowRight') {
+                if (isPlaying) togglePlay();
+                nextFrame();
+            } else if (e.code === 'ArrowLeft') {
+                if (isPlaying) togglePlay();
+                currentFrame = (currentFrame - 1 + totalFrames) % totalFrames;
+                loadFrame(currentFrame);
+            }
+        });
+
+        document.getElementById('frame-display').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:600px;font-size:24px;color:#666;">Press Play to start</div>';
+        document.getElementById('frame-info').textContent = 'Ready to start';
+    </script>
+</body>
+</html>
