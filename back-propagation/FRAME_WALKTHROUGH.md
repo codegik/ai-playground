@@ -38,6 +38,26 @@ So we got 0.60.
 
 ---
 
+## Between Frame 1 and Frame 2: Network State
+
+### What the Network Stores
+
+Before starting the backward pass, the network **saves critical information** from the forward pass:
+
+- Stored Activations
+- Stored Weights
+- Computed Error
+- Computed Loss
+
+### Why This Matters
+
+- The backward pass **requires** these stored values to compute gradients.
+
+- This is the key insight of backpropagation.
+- During forward pass, the network remembers everything it computed. During backward pass, it uses those memories to calculate how to adjust each weight.
+
+---
+
 ## Frame 2: First Backward Pass
 
 **Input:** [0, 0]

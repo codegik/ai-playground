@@ -144,10 +144,10 @@
         </div>
     </div>
 
-    <div class="info" id="frame-info">Frame 1 of 40</div>
+    <div class="info" id="frame-info">Frame 1 of 60</div>
 
     <script>
-        const totalFrames = 40;
+        const totalFrames = 60;
         let currentFrame = 0;
         let isPlaying = false;
         let interval;
@@ -168,8 +168,16 @@
         }
 
         function updateInfo() {
-            const phase = currentFrame % 2 === 0 ? 'Forward Pass' : 'Backward Pass';
-            const iteration = Math.floor(currentFrame / 8);
+            const frameInCycle = currentFrame % 3;
+            let phase;
+            if (frameInCycle === 0) {
+                phase = 'Forward Pass';
+            } else if (frameInCycle === 1) {
+                phase = 'Network State Storage';
+            } else {
+                phase = 'Backward Pass';
+            }
+            const iteration = Math.floor(currentFrame / 12);
             document.getElementById('frame-info').textContent =
                 `Frame ${currentFrame + 1} of ${totalFrames} - Iteration ${iteration} - ${phase}`;
         }
