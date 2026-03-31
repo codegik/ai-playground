@@ -126,8 +126,9 @@
     </div>
 
     <div class="controls">
+        <button onclick="previousFrame()">◀ Previous</button>
         <button id="play-btn" onclick="togglePlay()">▶ Play</button>
-        <button id="restart-btn" onclick="restart()">↻ Restart</button>
+        <button onclick="nextFrameManual()">Next ▶</button>
 
         <div class="speed-control">
             <span>Speed:</span>
@@ -203,18 +204,20 @@
             }
         }
 
-        function restart() {
+        function nextFrameManual() {
             if (isPlaying) {
-                isPlaying = false;
-                const btn = document.getElementById('play-btn');
-                btn.textContent = '▶ Play';
-                btn.classList.remove('pause');
-                clearInterval(interval);
+                togglePlay();
             }
-            currentFrame = 0;
-            document.getElementById('frame-display').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:600px;font-size:24px;color:#666;">Press Play to start</div>';
-            document.getElementById('progress').style.width = '0%';
-            document.getElementById('frame-info').textContent = 'Ready to start';
+            currentFrame = (currentFrame + 1) % totalFrames;
+            loadFrame(currentFrame);
+        }
+
+        function previousFrame() {
+            if (isPlaying) {
+                togglePlay();
+            }
+            currentFrame = (currentFrame - 1 + totalFrames) % totalFrames;
+            loadFrame(currentFrame);
         }
 
         function setSpeed(newSpeed) {
@@ -245,17 +248,13 @@
                 e.preventDefault();
                 togglePlay();
             } else if (e.code === 'ArrowRight') {
-                if (isPlaying) togglePlay();
-                nextFrame();
+                nextFrameManual();
             } else if (e.code === 'ArrowLeft') {
-                if (isPlaying) togglePlay();
-                currentFrame = (currentFrame - 1 + totalFrames) % totalFrames;
-                loadFrame(currentFrame);
+                previousFrame();
             }
         });
 
-        document.getElementById('frame-display').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:600px;font-size:24px;color:#666;">Press Play to start</div>';
-        document.getElementById('frame-info').textContent = 'Ready to start';
+        loadFrame(0);
     </script>
 </body>
 </html>
