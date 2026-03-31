@@ -9,6 +9,11 @@ def sigmoid_derivative(x):
 
 class NeuralNetwork:
     def __init__(self, input_size, hidden_size, output_size):
+        self.output = None
+        self.hidden_output = None
+        self.output_input = None
+        self.input = None
+        self.hidden_input = None
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.output_size = output_size
@@ -18,13 +23,13 @@ class NeuralNetwork:
         self.bias_hidden = [0.0] * hidden_size
         self.bias_output = [0.0] * output_size
 
-    def forward(self, X):
-        self.input = X
+    def forward(self, x):
+        self.input = x
 
         self.hidden_input = [0.0] * self.hidden_size
         for j in range(self.hidden_size):
             for i in range(self.input_size):
-                self.hidden_input[j] += X[i] * self.weights_input_hidden[i][j]
+                self.hidden_input[j] += x[i] * self.weights_input_hidden[i][j]
             self.hidden_input[j] += self.bias_hidden[j]
 
         self.hidden_output = [sigmoid(x) for x in self.hidden_input]
@@ -38,7 +43,7 @@ class NeuralNetwork:
         self.output = [sigmoid(x) for x in self.output_input]
         return self.output
 
-    def backward(self, X, y, learning_rate):
+    def backward(self, x, y, learning_rate):
         output_error = [self.output[k] - y[k] for k in range(self.output_size)]
         output_delta = [output_error[k] * sigmoid_derivative(self.output[k]) for k in range(self.output_size)]
 
@@ -58,22 +63,22 @@ class NeuralNetwork:
 
         for i in range(self.input_size):
             for j in range(self.hidden_size):
-                self.weights_input_hidden[i][j] -= learning_rate * hidden_delta[j] * X[i]
+                self.weights_input_hidden[i][j] -= learning_rate * hidden_delta[j] * x[i]
 
         for j in range(self.hidden_size):
             self.bias_hidden[j] -= learning_rate * hidden_delta[j]
 
-    def train(self, X_data, y_data, epochs, learning_rate):
+    def train(self, x_data, y_data, epochs, learning_rate):
         losses = []
         for epoch in range(epochs):
             epoch_loss = 0.0
-            for X, y in zip(X_data, y_data):
+            for X, y in zip(x_data, y_data):
                 output = self.forward(X)
                 loss = sum((output[k] - y[k]) ** 2 for k in range(self.output_size))
                 epoch_loss += loss
                 self.backward(X, y, learning_rate)
 
-            avg_loss = epoch_loss / len(X_data)
+            avg_loss = epoch_loss / len(x_data)
             losses.append(avg_loss)
 
             if epoch % 1000 == 0:
@@ -81,6 +86,6 @@ class NeuralNetwork:
 
         return losses
 
-    def predict(self, X):
-        output = self.forward(X)
+    def predict(self, x):
+        output = self.forward(x)
         return [1 if o > 0.5 else 0 for o in output]

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backpropagation Visualization</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            background: white;
+            color: #1e3c72;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #canvas {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: block;
+            margin: 0 auto;
+        }
+
+        .info-panel {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .info-label {
+            font-weight: bold;
+            opacity: 0.9;
+        }
+
+        .info-value {
+            font-family: 'Courier New', monospace;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Backpropagation Visualization</h1>
+        <p class="subtitle">Watch how gradients flow backward through a neural network</p>
+
+        <div class="controls">
+            <button onclick="runForwardPass()">Forward Pass</button>
+            <button onclick="runBackwardPass()">Backward Pass</button>
+            <button onclick="runFullCycle()">Full Training Step</button>
+            <button onclick="reset()">Reset</button>
+        </div>
+
+        <canvas id="canvas" width="1000" height="600"></canvas>
+
+        <div class="info-panel">
+            <div class="info-row">
+                <span class="info-label">Current Phase:</span>
+                <span class="info-value" id="phase">Ready</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Input:</span>
+                <span class="info-value" id="input">[1, 0]</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Target:</span>
+                <span class="info-value" id="target">[1]</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Prediction:</span>
+                <span class="info-value" id="prediction">--</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Loss:</span>
+                <span class="info-value" id="loss">--</span>
+            </div>
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #4CAF50;"></div>
+                <span>Forward Flow</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FF5722;"></div>
+                <span>Backward Gradient</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #2196F3;"></div>
+                <span>Neurons</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const network = {
+            input: [1, 0],
+            target: [1],
+            weights_ih: [[0.5, -0.3], [0.8, 0.2]],
+            weights_ho: [[0.6], [-0.4]],
+            hidden: [0, 0],
+            output: [0],
+            learning_rate: 0.5
+        };
+
+        const positions = {
+            input: [{x: 150, y: 200}, {x: 150, y: 400}],
+            hidden: [{x: 500, y: 150}, {x: 500, y: 450}],
+            output: [{x: 850, y: 300}]
+        };
+
+        function sigmoid(x) {
+            return 1 / (1 + Math.exp(-x));
+        }
+
+        function drawNeuron(pos, value, label, color = '#2196F3') {
+            const intensity = Math.abs(value);
+            const radius = 40;
+
+            ctx.beginPath();
+            ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.globalAlpha = 0.3 + intensity * 0.7;
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, pos.x, pos.y - 5);
+            ctx.font = '14px Arial';
+            ctx.fillText(value.toFixed(2), pos.x, pos.y + 15);
+        }
+
+        function drawConnection(from, to, weight, color = '#4CAF50', animated = false) {
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = Math.abs(weight) * 5 + 1;
+            ctx.globalAlpha = 0.6;
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+
+            const midX = (from.x + to.x) / 2;
+            const midY = (from.y + to.y) / 2;
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(weight.toFixed(2), midX, midY - 10);
+        }
+
+        function drawNetwork() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#f5f5f5';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    drawConnection(positions.input[i], positions.hidden[j], network.weights_ih[i][j]);
+                }
+            }
+
+            for (let j = 0; j < 2; j++) {
+                drawConnection(positions.hidden[j], positions.output[0], network.weights_ho[j][0]);
+            }
+
+            drawNeuron(positions.input[0], network.input[0], 'I₀');
+            drawNeuron(positions.input[1], network.input[1], 'I₁');
+            drawNeuron(positions.hidden[0], network.hidden[0], 'H₀');
+            drawNeuron(positions.hidden[1], network.hidden[1], 'H₁');
+            drawNeuron(positions.output[0], network.output[0], 'O₀');
+
+            ctx.fillStyle = '#333';
+            ctx.font = 'bold 20px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Input Layer', 150, 50);
+            ctx.fillText('Hidden Layer', 500, 50);
+            ctx.fillText('Output Layer', 850, 50);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function runForwardPass() {
+            document.getElementById('phase').textContent = 'Forward Pass';
+
+            network.hidden[0] = sigmoid(network.input[0] * network.weights_ih[0][0] +
+                                       network.input[1] * network.weights_ih[1][0]);
+            network.hidden[1] = sigmoid(network.input[0] * network.weights_ih[0][1] +
+                                       network.input[1] * network.weights_ih[1][1]);
+
+            drawNetwork();
+            await sleep(800);
+
+            network.output[0] = sigmoid(network.hidden[0] * network.weights_ho[0][0] +
+                                       network.hidden[1] * network.weights_ho[1][0]);
+
+            drawNetwork();
+
+            const loss = Math.pow(network.output[0] - network.target[0], 2);
+            document.getElementById('prediction').textContent = network.output[0].toFixed(4);
+            document.getElementById('loss').textContent = loss.toFixed(4);
+            document.getElementById('phase').textContent = 'Forward Complete';
+        }
+
+        async function runBackwardPass() {
+            if (network.output[0] === 0) {
+                alert('Run Forward Pass first!');
+                return;
+            }
+
+            document.getElementById('phase').textContent = 'Backward Pass';
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#f5f5f5';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    drawConnection(positions.input[i], positions.hidden[j],
+                                 network.weights_ih[i][j], '#FFB74D');
+                }
+            }
+
+            for (let j = 0; j < 2; j++) {
+                drawConnection(positions.hidden[j], positions.output[0],
+                             network.weights_ho[j][0], '#FF5722');
+            }
+
+            drawNeuron(positions.input[0], network.input[0], 'I₀', '#FFB74D');
+            drawNeuron(positions.input[1], network.input[1], 'I₁', '#FFB74D');
+            drawNeuron(positions.hidden[0], network.hidden[0], 'H₀', '#FF7043');
+            drawNeuron(positions.hidden[1], network.hidden[1], 'H₁', '#FF7043');
+            drawNeuron(positions.output[0], network.output[0], 'O₀', '#FF5722');
+
+            await sleep(1000);
+
+            const output_error = network.output[0] - network.target[0];
+            const output_delta = output_error * network.output[0] * (1 - network.output[0]);
+
+            for (let j = 0; j < 2; j++) {
+                const gradient = output_delta * network.hidden[j];
+                network.weights_ho[j][0] -= network.learning_rate * gradient;
+            }
+
+            const hidden_error = [
+                output_delta * network.weights_ho[0][0],
+                output_delta * network.weights_ho[1][0]
+            ];
+
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 2; j++) {
+                    const hidden_delta = hidden_error[j] * network.hidden[j] * (1 - network.hidden[j]);
+                    const gradient = hidden_delta * network.input[i];
+                    network.weights_ih[i][j] -= network.learning_rate * gradient;
+                }
+            }
+
+            drawNetwork();
+            document.getElementById('phase').textContent = 'Backward Complete - Weights Updated!';
+        }
+
+        async function runFullCycle() {
+            await runForwardPass();
+            await sleep(500);
+            await runBackwardPass();
+        }
+
+        function reset() {
+            network.weights_ih = [[0.5, -0.3], [0.8, 0.2]];
+            network.weights_ho = [[0.6], [-0.4]];
+            network.hidden = [0, 0];
+            network.output = [0];
+            document.getElementById('prediction').textContent = '--';
+            document.getElementById('loss').textContent = '--';
+            document.getElementById('phase').textContent = 'Ready';
+            drawNetwork();
+        }
+
+        drawNetwork();
+    </script>
+</body>
+</html>
