@@ -27,7 +27,6 @@ class NeuralNetwork:
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.output_size = output_size
-
         self.weights_input_hidden = [[random.uniform(-1, 1) for _ in range(hidden_size)] for _ in range(input_size)]
         self.weights_hidden_output = [[random.uniform(-1, 1) for _ in range(output_size)] for _ in range(hidden_size)]
         self.bias_hidden = [0.0] * hidden_size
@@ -82,11 +81,11 @@ class NeuralNetwork:
         losses = []
         for epoch in range(epochs):
             epoch_loss = 0.0
-            for X, y in zip(x_data, y_data):
-                output = self.forward(X)
+            for x, y in zip(x_data, y_data):
+                output = self.forward(x)
                 loss = sum((output[k] - y[k]) ** 2 for k in range(self.output_size))
                 epoch_loss += loss
-                self.backward(X, y, learning_rate)
+                self.backward(x, y, learning_rate)
 
             avg_loss = epoch_loss / len(x_data)
             losses.append(avg_loss)

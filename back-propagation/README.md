@@ -34,9 +34,6 @@ Key insight: Each layer stores its activation derivative during forward pass, th
 - Works with any differentiable activation function
 - Enables deep architectures through gradient flow
 
-**Local Computation**
-- Each layer only needs its inputs, outputs, and gradients from next layer
-- Enables parallelization and modular design
 
 ## Cons
 
@@ -49,31 +46,6 @@ Key insight: Each layer stores its activation derivative during forward pass, th
 - Large weight values cause gradients to grow exponentially
 - Network becomes unstable, parameters overflow
 
-**Local Minima**
-- Non-convex loss surface has many local minima
-- No guarantee of finding global optimum
-
-**Dead Neurons**
-- ReLU neurons can permanently output zero if they receive consistent negative inputs
-- Gradient becomes zero, neuron stops learning
-
-## Code Architecture
-
-```python
-class Layer:
-    def forward(self, x):
-        self.input = x
-        self.output = sigmoid(x @ self.weights + self.bias)
-        return self.output
-
-    def backward(self, grad_output):
-        grad_activation = grad_output * sigmoid_derivative(self.output)
-        self.grad_weights = self.input.T @ grad_activation
-        self.grad_bias = sum(grad_activation)
-        return grad_activation @ self.weights.T
-```
-
-The pattern: store inputs during forward, use them during backward to compute gradients.
 
 ## Use Case: Binary Classification
 
