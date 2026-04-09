@@ -105,3 +105,87 @@ class TransactionFlowIntegrationTest extends AnyFlatSpec with Matchers:
       opensearch.stop()
     }
   }
+
+  "TransactionConsumer" should "consume and index multiple transactions from SQS" in {
+    val localstack = new GenericContainer(DockerImageName.parse("localstack/localstack:3.0"))
+    localstack.withEnv("SERVICES", "sqs")
+    localstack.addExposedPort(4566)
+    localstack.waitingFor(Wait.forLogMessage(".*Ready.*", 1))
+
+    val opensearch = new GenericContainer(DockerImageName.parse("opensearchproject/opensearch:2.11.0"))
+    opensearch.withEnv("discovery.type", "single-node")
+    opensearch.withEnv("OPENSEARCH_INITIAL_ADMIN_PASSWORD", "Admin@123")
+    opensearch.withEnv("DISABLE_SECURITY_PLUGIN", "true")
+    opensearch.addExposedPort(9200)
+    opensearch.waitingFor(Wait.forHttp("/_cluster/health").forPort(9200))
+
+    localstack.start()
+    opensearch.start()
+
+    try {
+      val sqsEndpoint = s"http://${localstack.getHost}:${localstack.getMappedPort(4566)}"
+      val osEndpoint  = s"http://${opensearch.getHost}:${opensearch.getMappedPort(9200)}"
+
+      val credentials = AwsBasicCredentials.create("test", "test")
+      val sqsClient = SqsClient.builder()
+        .endpointOverride(URI.create(sqsEndpoint))
+        .region(Region.US_EAST_1)
+        .credentialsProvider(StaticCredentialsProvider.create(credentials))
+        .build()
+
+      val queueUrl = sqsClient.createQueue(
+        CreateQueueRequest.builder().queueName("transactions-batch").build()
+      ).queueUrl()
+
+      val objectMapper = new ObjectMapper()
+      objectMapper.registerModule(DefaultScalaModule)
+
+      val restClient = RestClient.builder(HttpHost.create(osEndpoint)).build()
+      val transport  = new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper))
+      val osClient   = new OpenSearchClient(transport)
+
+      osClient.indices().create(CreateIndexRequest.of(i => i.index("transactions-batch")))
+
+      Thread.sleep(1000)
+
+      val transactions = List(
+        Transaction("tx-batch-001", 50.00,  "USD", System.currentTimeMillis()),
+        Transaction("tx-batch-002", 75.25,  "EUR", System.currentTimeMillis()),
+        Transaction("tx-batch-003", 200.00, "GBP", System.currentTimeMillis())
+      )
+
+      val service = new TransactionService(sqsClient, queueUrl)
+      transactions.foreach(tx => service.postTransaction(tx) should not be empty)
+
+      val consumer = new TransactionConsumer(sqsClient, queueUrl, osClient, "transactions-batch")
+
+      var totalConsumed = 0
+      var attempts = 0
+      while (totalConsumed < transactions.size && attempts < 15) {
+        totalConsumed += consumer.consumeAndIndex()
+        if (totalConsumed < transactions.size) Thread.sleep(1000)
+        attempts += 1
+      }
+
+      totalConsumed shouldBe transactions.size
+
+      Thread.sleep(1000)
+
+      transactions.foreach { tx =>
+        val getResponse = osClient.get(
+          GetRequest.of(g => g.index("transactions-batch").id(tx.id)),
+          classOf[Transaction]
+        )
+        getResponse.found() shouldBe true
+        val retrieved = getResponse.source()
+        retrieved.id       shouldBe tx.id
+        retrieved.amount   shouldBe tx.amount
+        retrieved.currency shouldBe tx.currency
+      }
+
+      restClient.close()
+    } finally {
+      localstack.stop()
+      opensearch.stop()
+    }
+  }
