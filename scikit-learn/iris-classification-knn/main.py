@@ -1,25 +1,3 @@
-"""
-Iris classification with K-Nearest Neighbors (KNN)
-===================================================
-
-This is the "hello world" of scikit-learn. We teach a model to look at the
-measurements of an Iris flower and guess which of the three species it is.
-
-The whole supervised-learning workflow is here, and almost every scikit-learn
-project follows these same five steps:
-
-    1. Load the data        (features X, labels y)
-    2. Split it             (train set to learn from, test set to grade on)
-    3. Preprocess           (scale the numbers so no feature dominates)
-    4. Train a model        (estimator.fit)
-    5. Evaluate & predict   (estimator.predict + metrics)
-
-Run it with:
-
-    pip install -r requirements.txt
-    python main.py
-"""
-
 from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
