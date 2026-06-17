@@ -42,6 +42,9 @@ make test    # run the tests (pytest)
 
 - [`iris-classification-knn`](iris-classification-knn/) — the "hello world" of
   scikit-learn: classify Iris flowers with K-Nearest Neighbors. **Start here.**
+- [`iris-classification-decision-tree`](iris-classification-decision-tree/) —
+  the same task with a Decision Tree: no feature scaling, plus readable rules
+  and feature importances.
 
 ## References
 
