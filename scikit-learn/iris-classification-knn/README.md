@@ -24,9 +24,12 @@ The Iris dataset has 150 flowers, 3 species, and 4 measurements each
 
 ## Run it
 
+Every POC exposes the same three Makefile targets:
+
 ```shell
-pip install -r requirements.txt
-python main.py
+make build   # clean, create a fresh .venv and install requirements
+make run     # run the POC
+make test    # run the tests
 ```
 
 Expected output: ~93% accuracy on the held-out test set, plus a confusion

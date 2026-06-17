@@ -28,11 +28,14 @@ Examples of how future POCs slot in:
 
 Built with Python 3.12.
 
-Install the dependencies for any POC from its own `requirements.txt`:
+Every POC ships a standard `Makefile` with the same three targets, so you run
+them all the same way:
 
 ```shell
-pip install -r <poc-folder>/requirements.txt
-python <poc-folder>/main.py
+cd <poc-folder>
+make build   # clean, create a fresh .venv and install requirements.txt
+make run     # run the POC (main.py)
+make test    # run the tests (pytest)
 ```
 
 ## POCs
