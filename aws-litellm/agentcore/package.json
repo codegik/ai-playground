@@ -1,0 +1,15 @@
+{
+  "name": "agentcore-litellm",
+  "version": "1.0.0",
+  "description": "AWS Bedrock AgentCore Runtime agent (official bedrock-agentcore SDK) that reaches OpenAI through a LiteLLM proxy",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "bedrock-agentcore": "^0.4.3",
+    "openai": "^4.77.0",
+    "zod": "^4.1.13"
+  }
+}

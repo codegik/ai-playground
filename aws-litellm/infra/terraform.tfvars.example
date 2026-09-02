@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+aws_region         = "us-east-1"
+openai_api_key     = "sk-your-real-openai-key"
+litellm_master_key = "sk-litellm-master-change-me"
+
+# Optional overrides:
+# litellm_model_alias = "gpt-4o-mini"
+# openai_model        = "gpt-4o-mini"
+# litellm_instance_type = "t3.small"

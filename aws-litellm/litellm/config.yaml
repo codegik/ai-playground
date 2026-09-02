@@ -1,0 +1,13 @@
+# Reference copy of the LiteLLM proxy config. The Terraform user-data script
+# writes an identical file onto the EC2 host that runs the LiteLLM container.
+# Use this to run LiteLLM locally:
+#   OPENAI_API_KEY=sk-... LITELLM_MASTER_KEY=sk-litellm-master \
+#   litellm --config litellm/config.yaml --port 4000 --host 0.0.0.0
+model_list:
+  - model_name: gpt-4o-mini            # alias the agent asks for
+    litellm_params:
+      model: openai/gpt-4o-mini        # real upstream model on OpenAI
+      api_key: os.environ/OPENAI_API_KEY
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY   # clients must send this as the API key

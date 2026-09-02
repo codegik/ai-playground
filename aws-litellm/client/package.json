@@ -1,0 +1,13 @@
+{
+  "name": "agentcore-client",
+  "version": "1.0.0",
+  "description": "Client that invokes the AgentCore runtime via InvokeAgentRuntime",
+  "type": "module",
+  "main": "invoke.js",
+  "scripts": {
+    "invoke": "node invoke.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-agentcore": "^3.750.0"
+  }
+}
