@@ -26,6 +26,18 @@ const app = new BedrockAgentCoreApp({
 
     // Stream the model's tokens back through the runtime as they arrive.
     process: async function* (request) {
+      // Log an identifiable marker per invocation so requests can be correlated
+      // in CloudWatch (filter on "agent-invoke"). Also records the upstream the
+      // OpenAI client is pointed at — this is the LiteLLM gateway, not OpenAI.
+      console.log(
+        JSON.stringify({
+          marker: "agent-invoke",
+          model: MODEL,
+          upstream: client.baseURL,
+          prompt: request.prompt,
+        })
+      );
+
       const stream = await client.chat.completions.create({
         model: MODEL,
         stream: true,

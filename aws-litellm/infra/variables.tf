@@ -17,10 +17,10 @@ variable "openai_api_key" {
 }
 
 variable "litellm_master_key" {
-  description = "Shared secret between the agent and LiteLLM (LiteLLM master_key)."
+  description = "Shared secret between the agent and LiteLLM (LiteLLM master_key). Leave empty to auto-generate one at provision time."
   type        = string
   sensitive   = true
-  default     = "sk-litellm-master-change-me"
+  default     = ""
 }
 
 variable "litellm_model_alias" {

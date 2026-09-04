@@ -7,6 +7,10 @@ terraform {
       # aws_bedrockagentcore_agent_runtime ships in recent 6.x provider builds.
       version = ">= 6.15.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.6.0"
+    }
   }
 }
 

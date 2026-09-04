@@ -3,6 +3,18 @@ data "aws_ssm_parameter" "al2023" {
   name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 }
 
+# Auto-generate the LiteLLM master key when the caller didn't supply one.
+resource "random_password" "litellm_master_key" {
+  length  = 40
+  special = false
+}
+
+locals {
+  # Use the provided key, or fall back to the generated one. Same secret is
+  # wired into both the LiteLLM host and the agent so they always match.
+  litellm_master_key = coalesce(var.litellm_master_key, "sk-${random_password.litellm_master_key.result}")
+}
+
 resource "aws_security_group" "litellm" {
   name        = "${var.name_prefix}-litellm-sg"
   description = "Allow inbound to the LiteLLM proxy port"
@@ -39,7 +51,7 @@ resource "aws_instance" "litellm" {
     litellm_model_alias = var.litellm_model_alias
     openai_model        = var.openai_model
     openai_api_key      = var.openai_api_key
-    litellm_master_key  = var.litellm_master_key
+    litellm_master_key  = local.litellm_master_key
   })
 
   tags = { Name = "${var.name_prefix}-litellm" }

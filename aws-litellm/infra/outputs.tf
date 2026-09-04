@@ -13,6 +13,12 @@ output "litellm_url" {
   value       = "http://${aws_eip.litellm.public_ip}:4000"
 }
 
+output "litellm_master_key" {
+  description = "LiteLLM master key (provided or auto-generated). Use as the API key when calling the proxy."
+  value       = local.litellm_master_key
+  sensitive   = true
+}
+
 output "agent_runtime_arn" {
   description = "ARN used by the client to invoke the agent."
   value       = aws_bedrockagentcore_agent_runtime.agent.agent_runtime_arn

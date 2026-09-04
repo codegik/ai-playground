@@ -44,7 +44,7 @@ data "aws_iam_policy_document" "agent_permissions" {
       "logs:DescribeLogGroups",
       "logs:DescribeLogStreams",
     ]
-    resources = ["arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/bedrock-agentcore/*"]
+    resources = ["arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/bedrock-agentcore/*"]
   }
 
   statement {
@@ -95,7 +95,7 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
   # Wire the agent to the LiteLLM proxy. The agent reads these at runtime.
   environment_variables = {
     LITELLM_BASE_URL = "http://${aws_eip.litellm.public_ip}:4000"
-    LITELLM_API_KEY  = var.litellm_master_key
+    LITELLM_API_KEY  = local.litellm_master_key
     LITELLM_MODEL    = var.litellm_model_alias
   }
 

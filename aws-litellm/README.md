@@ -19,8 +19,21 @@ AgentCore Runtime  ──HTTP /v1/chat/completions──►  LiteLLM proxy (EC2)
 | `agentcore/` | NodeJS agent built on the official **`bedrock-agentcore`** runtime SDK (`BedrockAgentCoreApp`). The SDK serves `POST /invocations` + `GET /ping` on `:8080`; the handler streams tokens from LiteLLM via the OpenAI SDK. ARM64 container. |
 | `litellm/`   | LiteLLM proxy config (also embedded in the EC2 user-data).             |
 | `infra/`     | Terraform: VPC, ECR, IAM, the LiteLLM EC2 host, and the AgentCore runtime. |
-| `client/`    | NodeJS client that calls `InvokeAgentRuntime` with a prompt.           |
 | `deploy.sh`  | Orchestrates: create ECR → build/push ARM64 image → apply the rest.    |
+| `invoke.sh`  | Invoke the deployed agent with a prompt (AWS CLI + jq, no Node).       |
+| `verify.sh`  | Prove the current image is live and traffic routes through LiteLLM.    |
+| `destroy.sh` | Tear down everything this project created on AWS.                      |
+
+## Engineer flow
+
+Run the four scripts in order to test this POC:
+
+```bash
+./deploy.sh                                  # provision + build/push + apply
+./invoke.sh "Explain LiteLLM in one line."   # call the deployed agent
+./verify.sh                                   # confirm image is live + routes via LiteLLM
+./destroy.sh                                  # tear it all down
+```
 
 ## How the pieces connect
 
@@ -39,7 +52,7 @@ AgentCore Runtime  ──HTTP /v1/chat/completions──►  LiteLLM proxy (EC2)
 - Docker with `buildx` (to build a `linux/arm64` image on any host).
 - AWS CLI configured with credentials; run in a region where AgentCore Runtime
   is available (default `us-east-1`).
-- Node.js ≥ 20 (for the client).
+- `jq` and `uuidgen` (used by `invoke.sh` / `verify.sh`).
 
 ## Deploy
 
@@ -47,7 +60,7 @@ AgentCore Runtime  ──HTTP /v1/chat/completions──►  LiteLLM proxy (EC2)
 cd aws-litellm
 cp infra/terraform.tfvars.example infra/terraform.tfvars
 # edit infra/terraform.tfvars: set openai_api_key and litellm_master_key
-make deploy        # == ./deploy.sh
+./deploy.sh
 ```
 
 `deploy.sh` runs `terraform init`, creates the ECR repo, builds + pushes the
@@ -57,7 +70,7 @@ runtime). The LiteLLM container needs ~1–2 min after boot to be reachable.
 ## Invoke
 
 ```bash
-make invoke PROMPT="Explain what LiteLLM does in one sentence."
+./invoke.sh "Explain what LiteLLM does in one sentence."
 ```
 
 This reads the runtime ARN from `terraform output` and calls
@@ -90,7 +103,7 @@ curl -sN localhost:8080/invocations \
 ## Tear down
 
 ```bash
-make destroy
+./destroy.sh
 ```
 
 ## POC caveats (not production-ready)
