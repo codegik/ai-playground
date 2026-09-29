@@ -83,16 +83,13 @@ export class Memory {
   }
 
   async saveTurn(actorId, sessionId, role, text) {
+    const payload = turnPayload(role, text);
     const out = await this.client.send(
-      new CreateEventCommand({
-        memoryId: this.memoryId,
-        actorId,
-        sessionId,
-        eventTimestamp: new Date(),
-        payload: turnPayload(role, text),
-      })
+      new CreateEventCommand({ memoryId: this.memoryId, actorId, sessionId, eventTimestamp: new Date(), payload })
     );
-    this.onOp({ op: "CreateEvent", actorId, sessionId, event: describeEvent(out.event) });
+    // The CreateEvent response echoes ids/timestamp but not the payload, so
+    // describe the event with the content we just wrote.
+    this.onOp({ op: "CreateEvent", actorId, sessionId, event: describeEvent({ ...out.event, payload }) });
     return out.event;
   }
 }

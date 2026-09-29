@@ -44,7 +44,8 @@ test("Memory reports every call through onOp", async () => {
   const client = {
     send: async (cmd) => {
       sent.push(cmd.constructor.name);
-      if (cmd.constructor.name === "CreateEventCommand") return { event: event("e9", Date.now(), "USER", "hi") };
+      // Like the real service: the CreateEvent response carries no payload.
+      if (cmd.constructor.name === "CreateEventCommand") return { event: { eventId: "e9", eventTimestamp: new Date() } };
       if (cmd.constructor.name === "ListEventsCommand") return { events: [] };
       return { memoryRecordSummaries: [{ memoryRecordId: "r1", score: 0.9, content: { text: "likes tea" } }] };
     },
