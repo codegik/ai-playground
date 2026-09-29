@@ -1,0 +1,13 @@
+node_modules/
+npm-debug.log
+
+# Terraform
+infra/.terraform/
+infra/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+infra/terraform.tfvars
+crash.log
+
+# Secrets / env
+.env

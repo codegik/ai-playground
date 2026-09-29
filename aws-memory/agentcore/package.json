@@ -1,0 +1,17 @@
+{
+  "name": "agentcore-memory",
+  "version": "1.0.0",
+  "description": "AWS Bedrock AgentCore Runtime agent that keeps conversation state in AgentCore Memory and reaches OpenAI through a LiteLLM proxy",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-agentcore": "^3.1142.0",
+    "bedrock-agentcore": "^0.4.3",
+    "openai": "^4.77.0",
+    "zod": "^4.1.13"
+  }
+}

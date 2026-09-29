@@ -1,0 +1,30 @@
+#!/bin/bash
+set -euxo pipefail
+
+# Install Docker on Amazon Linux 2023 and run the LiteLLM proxy container.
+dnf update -y
+dnf install -y docker
+systemctl enable --now docker
+
+mkdir -p /opt/litellm
+cat > /opt/litellm/config.yaml <<'CONFIG'
+model_list:
+  - model_name: ${litellm_model_alias}
+    litellm_params:
+      model: openai/${openai_model}
+      api_key: os.environ/OPENAI_API_KEY
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+CONFIG
+
+# Pull and run LiteLLM. The proxy listens on 4000 and exposes OpenAI-compatible
+# routes under /v1. Restart policy keeps it up across reboots.
+docker run -d \
+  --name litellm \
+  --restart unless-stopped \
+  -p 4000:4000 \
+  -e OPENAI_API_KEY='${openai_api_key}' \
+  -e LITELLM_MASTER_KEY='${litellm_master_key}' \
+  -v /opt/litellm/config.yaml:/app/config.yaml \
+  ghcr.io/berriai/litellm:main-stable \
+  --config /app/config.yaml --port 4000 --host 0.0.0.0
