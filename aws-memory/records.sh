@@ -17,10 +17,11 @@ STRATEGIES="$(terraform -chdir="$INFRA_DIR" output -json memory_strategy_ids)"
 echo "memory : $MEMORY_ID"
 for name in $(jq -r 'keys[]' <<<"$STRATEGIES"); do
   id="$(jq -r --arg n "$name" '.[$n]' <<<"$STRATEGIES")"
-  # A namespace is mandatory and acts as a prefix; every strategy's namespace
-  # starts with "/", so "/" returns all of that strategy's records.
+  # A namespace filter is mandatory. --namespace only matches one namespace
+  # exactly (e.g. "/facts/demo-user/"); --namespace-path "/" walks the whole
+  # hierarchy, so it returns the strategy's records for every actor/session.
   RECORDS="$(aws bedrock-agentcore list-memory-records --region "$REGION" \
-    --memory-id "$MEMORY_ID" --memory-strategy-id "$id" --namespace / --output json)"
+    --memory-id "$MEMORY_ID" --memory-strategy-id "$id" --namespace-path / --output json)"
   echo
   echo "== $name ($id): $(jq '.memoryRecordSummaries | length' <<<"$RECORDS") record(s)"
   if [ "${RAW:-0}" = 1 ]; then
